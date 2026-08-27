@@ -1,99 +1,167 @@
-# Talvoro GitHub release workflow
+<div align="center">
 
-Talvoro keeps release logic in `scripts/release/`. GitHub Actions calls the same repository scripts used locally; the workflow YAML is orchestration only.
+# Talvoro GitHub Releases & Verification
+
+### Protected publication with signed tags, Sigstore, provenance, and deterministic packages.
+
+**[Documentation](README.md)** · **[Release Engineering](RELEASING.md)** · **[Distributions](DISTRIBUTIONS.md)**
+
+</div>
+
+---
+
+Talvoro keeps release logic in `scripts/release/`. GitHub Actions orchestrates those repository scripts rather than hiding core release behavior inside workflow YAML.
 
 ## Trust chain
 
-Official releases follow this chain:
-
 ```text
 main
-  -> cryptographically verified annotated vX.Y.Z tag
-  -> exact tagged commit
-  -> VERSION validation
-  -> release regression tests
-  -> deterministic Source / Docker / Web Hosting build
-  -> archive + checksum verification
-  -> Docker/Web Hosting package smoke tests
-  -> SHA256SUMS.txt
-  -> keyless Sigstore signature bundle for each ZIP and SHA256SUMS.txt
-  -> GitHub artifact provenance attestations
-  -> complete draft GitHub Release
-  -> published/immutable GitHub Release
+  ↓
+cryptographically verified annotated vX.Y.Z tag
+  ↓
+exact tagged commit + VERSION validation
+  ↓
+release regression tests
+  ↓
+deterministic Source / Docker / Web Hosting build
+  ↓
+archive + checksum verification
+  ↓
+Docker/Web Hosting package smoke tests
+  ↓
+SHA256SUMS.txt
+  ↓
+Sigstore bundle for every ZIP + SHA256SUMS.txt
+  ↓
+GitHub artifact provenance attestations
+  ↓
+protected release approval
+  ↓
+complete GitHub Release
 ```
 
-The workflow never creates the release tag. A maintainer creates and pushes the signed tag only after the exact release commit is on `main`.
+The workflow never creates the version tag. A maintainer creates and pushes the signed tag only after the release commit is on `main`.
 
 ## Workflows
 
-### `.github/workflows/release-checks.yml`
+### Release checks
 
-Runs on pushes and pull requests targeting `dev` or `main`, plus manual dispatch. It runs the release regression suite, builds all three distributions, verifies them, and smoke-tests the Docker and Web Hosting packages.
+```text
+.github/workflows/release-checks.yml
+```
 
-The job has read-only repository permission. A failed branch push can optionally send a brrr notification.
+Runs on relevant pushes/pull requests for `dev` and `main`, plus manual dispatch.
 
-### `.github/workflows/release.yml`
+It validates the release-facing path by running:
 
-Runs only for `v*.*.*` tags. The repository scripts enforce the stricter `vX.Y.Z` form and require the tag to match the root `VERSION` exactly.
+- release-script syntax checks;
+- release-packaging regression tests;
+- all three distribution builds;
+- release/checksum verification;
+- Docker/Web Hosting smoke tests;
+- a check that validation did not modify tracked source.
 
-The build job is read-only. It verifies that the tag is annotated, points to the checked-out commit, is reachable from `origin/main`, and is reported by GitHub as cryptographically verified.
+The job uses read-only repository permission.
 
-The publish job uses the protected `release` environment and receives only the permissions needed to publish, request an OIDC token, and write artifact attestations. It downloads the already-verified artifacts, verifies them again, keylessly signs each of the three release ZIPs plus `SHA256SUMS.txt` with Cosign, immediately verifies every signature against the expected GitHub Actions OIDC identity, generates GitHub provenance attestations, creates/reuses a draft release, uploads the exact expected asset set, validates that asset set, and only then publishes the release.
+On a successful push to `main`, Talvoro can send a brrr **release-ready** notification. Failed branch checks can also notify brrr. Notification delivery is never a release trust gate.
 
-## One-time GitHub setup
+### Publish signed release
 
-### 1. Create a `release` environment
+```text
+.github/workflows/release.yml
+```
 
-In the repository:
+Runs for version-tag pushes matching the workflow's release-tag trigger.
 
-1. Open **Settings -> Environments**.
-2. Create an environment named exactly `release`.
-3. Recommended: add a required reviewer so final signing/publishing requires explicit approval.
-4. Restrict deployment branches/tags as appropriate for your repository policy.
+The repository scripts enforce the exact supported release-tag/version relationship.
 
-The build/test job runs before this approval gate. Only signing and publication wait on the environment.
+The build job verifies that the tag:
 
-### 2. Configure brrr notifications
+- is annotated;
+- points to the checked-out commit;
+- matches root `VERSION`;
+- is reachable from `origin/main`;
+- is reported by GitHub as cryptographically verified.
 
-brrr is optional and is never a release gate.
+The publish job uses the protected:
 
-Preferred setup:
+```text
+release
+```
 
-1. In the brrr app, copy only the webhook secret, for example `br_usr_...`.
-2. In GitHub open **Settings -> Secrets and variables -> Actions**.
-3. Create repository secret `BRRR_WEBHOOK_SECRET` with that secret value.
+environment.
 
-Talvoro sends this value in the `Authorization: Bearer ...` header to `https://api.brrr.now/v1/send`, which avoids placing the secret in a URL.
+It downloads the already-verified build artifacts, verifies them again, keylessly signs each release ZIP plus `SHA256SUMS.txt`, immediately verifies each Sigstore bundle, creates GitHub provenance attestations, validates the exact release asset set, and only then publishes.
 
-Compatibility setup matching brrr's GitHub Actions guide:
+## One-time repository setup
 
-- Create repository secret `BRRR_WEBHOOK_URL` containing the complete brrr webhook URL.
+### Protected `release` environment
 
-If both are configured, `BRRR_WEBHOOK_SECRET` takes precedence. Never commit either value to the repository.
+Create:
 
-Notifications are sent for release start, release success, release failure, publication failure, and failed branch release checks. Notification delivery failure prints a warning but cannot make a valid Talvoro release fail.
+```text
+Settings → Environments → release
+```
 
-### 3. Enable immutable GitHub Releases
+Recommended policy:
 
-In repository **Settings**, find **Releases** and enable **release immutability**.
+| Setting | Recommendation |
+| --- | --- |
+| Required reviewer | Enable |
+| Prevent self-review | Leave off if the sole maintainer must approve their own release |
+| Wait timer | Optional / normally off |
+| Admin bypass | Disable for a meaningful release gate |
+| Deployment branches/tags | Restrict to intended release tags such as `v*.*.*` |
 
-Talvoro intentionally creates a draft first, uploads and verifies the complete asset set, then publishes it. This allows all assets to be present before an immutable release is finalized.
+The build/test job completes before the publication approval gate.
 
-### 4. Protect `main`
+### brrr notifications
 
-Recommended branch policy:
+brrr is optional observability and is deliberately **not** part of Talvoro's software trust root.
 
-- require pull requests before merging;
-- require the `Release checks / Build and verify distributions` status check;
-- require branches to be up to date before merging;
-- restrict force pushes and branch deletion;
-- require signed commits if that matches the maintainer signing policy.
+Supported repository secrets:
 
-Apply a similar check requirement to `dev` if desired.
+```text
+BRRR_WEBHOOK_SECRET
+BRRR_WEBHOOK_URL
+```
 
-### 5. GitHub Actions policy
+When both are configured, the helper prefers the webhook secret path.
 
-Talvoro pins every external action to a full commit SHA. If the repository uses an Actions allow-list, allow GitHub-authored actions and `sigstore/cosign-installer`.
+Never commit either value.
+
+Typical lifecycle notifications include:
+
+- release checks failed;
+- `main` is release-ready;
+- release started;
+- release published;
+- signing/provenance/publication failed.
+
+A brrr outage must not make a valid release fail.
+
+### Release immutability
+
+When repository release immutability is enabled, Talvoro's draft-first publication model allows the complete asset set to be uploaded and checked before the release is finalized.
+
+### Protect `main`
+
+Recommended policy:
+
+- require pull requests before merge;
+- require the Release checks status;
+- require branches to be current where appropriate;
+- block force pushes;
+- block branch deletion;
+- require signed commits if that matches maintainer policy.
+
+A similar check policy can be applied to `dev`.
+
+### GitHub Actions policy
+
+Talvoro pins third-party actions to full commit SHAs.
+
+If the repository uses an Actions allow-list, include the GitHub-maintained actions required by the workflows and the reviewed Sigstore/Cosign installer dependency.
 
 ## Release procedure
 
@@ -105,77 +173,144 @@ Run locally:
 ./scripts/release/test-release.sh
 ./scripts/release/build-release.sh
 ./scripts/release/verify-release.sh
+./scripts/release/smoke-release-packages.sh
 ```
 
-Push the completed release to `dev` and let **Release checks** pass.
+Push the completed release work to `dev` and wait for Release checks to pass.
 
 ### 2. Promote `dev` to `main`
 
-Merge `dev` into `main` through the normal pull request process. The exact commit being released must be reachable from `main` before the release tag is pushed.
+Merge through the normal pull-request process.
 
-### 3. Create a signed annotated tag
+The exact commit being released must be reachable from `main` before the release tag is pushed.
 
-Confirm the checked-out release version:
+Wait for the `main` Release checks to pass.
+
+### 3. Confirm release-ready state
+
+For a successful `main` push, the brrr release-ready notification may report:
+
+```text
+Talvoro X.Y.Z is ready for release
+```
+
+This is a readiness signal, not a published release.
+
+### 4. Create the signed annotated tag
+
+Confirm:
 
 ```bash
 cat VERSION
+git status
+git log -1 --oneline
 ```
 
-For version `0.15.0`, the tag must be exactly `v0.15.0`.
-
-With Git signing already configured on the maintainer machine:
+For version `0.15.0`:
 
 ```bash
 git switch main
 git pull --ff-only origin main
+
 git tag -s v0.15.0 -m "Talvoro v0.15.0"
+git tag -v v0.15.0
+
+git rev-parse v0.15.0^{}
+git rev-parse main
+```
+
+The dereferenced tag commit and intended `main` commit must match.
+
+Then push only the release tag:
+
+```bash
 git push origin v0.15.0
 ```
 
-`git tag -s` uses the signing backend configured in Git. That may be GPG or SSH signing. Keep the signing private key in the maintainer's protected key store/hardware; never place it in Talvoro or GitHub Actions secrets merely to make this workflow work.
+> [!IMPORTANT]
+> `git tag -s` uses the signing backend configured in Git. Keep the human signing private key on the maintainer machine/hardware. It does not belong in repository or Actions secrets.
 
-The workflow fails if GitHub does not report the annotated tag as cryptographically verified.
+### 5. Build and verify
 
-### 4. Approve the `release` environment
+The tag workflow validates the source/tag relationship and then runs the release regression/build/verification/smoke sequence.
 
-After build and smoke tests pass, GitHub pauses before the publish job if required reviewers were configured. Review the workflow run and approve only the expected version/tag/commit.
+No publication occurs if this stage fails.
 
-### 5. GitHub publishes the release
+### 6. Approve `release`
 
-A successful release contains exactly these uploaded assets:
+If a reviewer is required, GitHub pauses the protected publish job.
+
+Review:
+
+- version;
+- tag;
+- commit;
+- completed build job;
+- expected workflow.
+
+Approve only when they match the intended release.
+
+### 7. Sign, attest, and publish
+
+The protected job:
+
+1. re-verifies the official tag;
+2. downloads the previously verified release set;
+3. verifies release packages/checksums again;
+4. installs the pinned Cosign tooling;
+5. keylessly signs all three ZIPs and `SHA256SUMS.txt`;
+6. immediately verifies every Sigstore bundle against the expected OIDC identity;
+7. creates GitHub provenance attestations;
+8. creates/reuses a draft release;
+9. uploads the exact expected asset set;
+10. validates the asset set;
+11. publishes only when all gates succeed.
+
+## Official asset set
+
+A successful Talvoro release contains:
 
 ```text
 talvoro-vX.Y.Z.zip
 talvoro-vX.Y.Z.zip.sigstore.json
+
 talvoro-vX.Y.Z-docker.zip
 talvoro-vX.Y.Z-docker.zip.sigstore.json
+
 talvoro-vX.Y.Z-webhosting.zip
 talvoro-vX.Y.Z-webhosting.zip.sigstore.json
+
 SHA256SUMS.txt
 SHA256SUMS.txt.sigstore.json
 ```
 
-GitHub also records provenance attestations for the release assets. GitHub's automatically generated source archives may still appear separately in the release UI; they are not Talvoro deployment distributions.
+GitHub-generated source archives may appear separately in the release UI. They are not Talvoro deployment distributions.
 
 ## Verify an official release
 
 ### SHA-256
 
-Linux:
+If all three Talvoro ZIPs are present:
+
+**Linux**
 
 ```bash
 sha256sum -c SHA256SUMS.txt
 ```
 
-macOS:
+**macOS**
 
 ```bash
 shasum -a 256 -c SHA256SUMS.txt
 ```
 
+If you downloaded only one distribution, filter the manifest to that filename before running the checksum tool.
+
 ### Sigstore signatures
 
-Every Talvoro deployment ZIP and the checksum manifest has its own Sigstore bundle. For `v0.15.0` in the official repository:
+Every Talvoro deployment ZIP and `SHA256SUMS.txt` has its own Sigstore bundle.
+
+For `v0.15.0`:
 
 ```bash
 IDENTITY='https://github.com/DrRoglaa/talvoro/.github/workflows/release.yml@refs/tags/v0.15.0'
@@ -194,11 +329,11 @@ do
 done
 ```
 
-Each bundle contains the signature, short-lived signing certificate, timestamp, and transparency-log proof. The signature bundles are intentionally not listed inside `SHA256SUMS.txt`; including them would create a circular dependency.
+The bundles intentionally are not listed inside `SHA256SUMS.txt`; signing bundles after generating the checksum manifest avoids a circular dependency.
 
-### GitHub build provenance
+### GitHub provenance
 
-For each downloaded release archive:
+Verify downloaded release archives with GitHub CLI:
 
 ```bash
 gh attestation verify talvoro-v0.15.0.zip -R DrRoglaa/talvoro
@@ -208,17 +343,22 @@ gh attestation verify talvoro-v0.15.0-webhosting.zip -R DrRoglaa/talvoro
 
 ## Failure behavior
 
-A release is not published if any required gate fails, including:
+The release must not publish when any required gate fails, including:
 
 - tag/version mismatch;
 - lightweight or GitHub-unverified release tag;
-- release commit not reachable from `main`;
-- release regression test failure;
-- deterministic package build/verification failure;
-- Docker or Web Hosting smoke-test failure;
+- tagged commit not reachable from `main`;
+- release regression failure;
+- deterministic build or archive verification failure;
+- Docker/Web Hosting smoke-test failure;
 - checksum failure;
-- Sigstore signing or immediate verification failure for any release ZIP or `SHA256SUMS.txt`;
-- GitHub provenance attestation failure;
-- incomplete or unexpected GitHub Release asset set.
+- Sigstore signing/verification failure for any required artifact;
+- provenance attestation failure;
+- incomplete or unexpected release asset set.
 
-brrr is deliberately excluded from this list. Notifications are useful observability, not part of Talvoro's software trust root.
+> [!NOTE]
+> brrr is deliberately excluded from this list. Notifications improve observability; they do not establish software authenticity.
+
+---
+
+[← Documentation home](README.md) · [Release engineering →](RELEASING.md)

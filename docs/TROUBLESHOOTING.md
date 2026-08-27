@@ -1,45 +1,50 @@
+<div align="center">
+
 # Talvoro Troubleshooting
 
-This guide covers general troubleshooting steps for Talvoro.
+### Diagnose deliberately. Change one thing at a time.
 
-Before changing data or configuration, create a backup when practical.
+**[Documentation](README.md)** · **[Backup & Restore](BACKUP-RESTORE.md)** · **[Upgrade Guide](UPGRADE.md)** · **[Security](../SECURITY.md)**
 
-## Start with these checks
+</div>
 
-Record:
+---
 
-- Talvoro version
-- deployment type
-- operating system or hosting provider
-- PHP/runtime version if applicable
-- database type and version
-- exact error message
-- time the problem occurred
-- steps required to reproduce it
+> [!IMPORTANT]
+> Before changing data, migrations, permissions, or production configuration, create a backup when practical.
 
-Avoid making several unrelated changes at once.
+## First 10 minutes
 
-## Verify the release
+Record these details before making changes:
 
-If the problem started immediately after installation or upgrade, confirm that the package matches the official release checksum.
+| Detail | Example |
+| --- | --- |
+| Talvoro version | `0.15.0` |
+| Deployment | Docker / Web Hosting / custom |
+| Host | OS, VPS, or hosting provider |
+| Runtime | PHP/runtime version |
+| Database | MySQL/MariaDB and version |
+| Error | Exact message and timestamp |
+| Reproduction | Smallest repeatable sequence |
 
-Linux:
+Then follow this order:
 
-```bash
-sha256sum -c SHA256SUMS.txt
-```
+1. verify the release if the problem began after install/upgrade;
+2. check service/runtime health;
+3. inspect the **first relevant error** in logs;
+4. validate configuration;
+5. check database connectivity;
+6. change one variable at a time.
 
-macOS:
+## Release integrity problems
 
-```bash
-shasum -a 256 -c SHA256SUMS.txt
-```
+If the issue started immediately after installation or upgrade, verify the package against the official release.
 
-Also verify the release signature where applicable.
+See **[GitHub Releases & Verification](GITHUB-RELEASES.md#verify-an-official-release)**.
 
-## Docker: check service status
+Do not continue diagnosing a package that fails integrity or signature checks as if it were a trusted Talvoro build.
 
-Run:
+## Docker: service status
 
 ```bash
 docker compose ps
@@ -47,163 +52,164 @@ docker compose ps
 
 Look for:
 
-- stopped services
-- restart loops
-- unhealthy services
-- missing dependencies
+- stopped services;
+- restart loops;
+- unhealthy services;
+- missing dependencies.
 
-## Docker: inspect logs
+## Docker: logs
+
+All services:
 
 ```bash
 docker compose logs --tail=200
 ```
 
-Or:
+Specific service:
 
 ```bash
 docker compose logs --tail=200 <service-name>
 ```
 
-If a service repeatedly restarts, inspect the first error in the sequence rather than only the final restart message.
+If a service repeatedly restarts, find the **first failure** in the sequence rather than reading only the final restart message.
 
-## Docker: validate configuration
+## Docker: configuration
 
 ```bash
 docker compose config
 ```
 
-This can reveal invalid Compose syntax or missing environment variables.
+This can expose invalid Compose syntax or missing environment values.
 
 ## Database connection errors
 
 Check:
 
-- database host
-- database port
-- database name
-- username
-- password
-- network connectivity
-- database service status
-- user permissions
+- host;
+- port;
+- database name;
+- username;
+- password;
+- database service state;
+- network path;
+- user permissions.
 
-In Docker, remember that `localhost` inside an application container refers to that container, not automatically to the database container.
+> [!TIP]
+> In Docker, `localhost` inside the Talvoro application container means that container itself. It does not automatically mean the database container.
 
 ## Migration errors
 
 If a migration fails:
 
-1. Stop.
-2. Record the exact error.
-3. Do not repeatedly force the migration.
-4. Check the installed Talvoro version.
-5. Confirm the supported upgrade path.
-6. Preserve the current database state.
-7. Restore from backup if the failed migration left the site unusable.
+1. stop;
+2. record the exact error;
+3. do not repeatedly force the same migration;
+4. confirm the installed and target Talvoro versions;
+5. confirm the supported upgrade path;
+6. preserve the current database state;
+7. restore the pre-upgrade backup if the site is left unusable.
 
-## File permission errors
+Do not manually manipulate migration history unless Talvoro documentation explicitly instructs you to.
 
-Symptoms may include:
+## File-permission errors
 
-- upload failures
-- cache/write failures
-- installer errors
-- inability to create generated files
+Common symptoms:
 
-Do not solve permission problems by making the entire site world-writable.
+- upload failures;
+- cache/write failures;
+- installer errors;
+- inability to create generated files.
 
-Identify the exact directory that requires write access and grant only the necessary permissions.
+> [!WARNING]
+> Do not solve permission problems by making the entire site world-writable.
+
+Identify the exact path that needs write access and grant only the necessary permissions.
 
 ## Blank page or HTTP 500
 
 Check:
 
-- application logs
-- web-server logs
-- runtime/PHP logs
-- required runtime extensions
-- environment configuration
-- database connectivity
-- recent upgrade or deployment changes
+- application logs;
+- web-server/proxy logs;
+- PHP/runtime logs;
+- required extensions;
+- environment configuration;
+- database connectivity;
+- recent deployment or upgrade changes.
 
-Disable public debug output in production if it may expose secrets or internal paths.
+Disable public debug output in production if it can expose internal paths or secrets.
 
 ## Login problems
 
 Confirm:
 
-- correct site URL
-- HTTPS/cookie behavior
-- system clock
-- database availability
-- administrator account state
-- proxy headers if behind a reverse proxy
+- correct public site URL;
+- HTTPS and cookie behavior;
+- system clock/time;
+- database availability;
+- administrator account state;
+- reverse-proxy host/protocol headers.
 
-Do not reset or modify authentication data directly in the database unless Talvoro documentation explicitly supports that procedure.
+Avoid directly modifying authentication records in the database unless Talvoro explicitly documents that recovery procedure.
 
 ## Upload problems
 
 Check:
 
-- writable upload directory
-- upload size limits
-- web-server limits
-- PHP/runtime limits
-- available disk space
-- file-type restrictions
-- reverse-proxy request limits
+| Area | What to inspect |
+| --- | --- |
+| Filesystem | Writable upload path and available disk space |
+| Runtime | PHP/request upload limits |
+| Proxy/server | Request-size limits |
+| Talvoro | File-type restrictions |
+| Hosting | Account quotas and permission policies |
 
-## Site loads but styling/scripts are broken
+## Styling or scripts are broken
 
 Check:
 
-- configured base URL
-- reverse-proxy path handling
-- HTTPS redirects
-- browser console errors
-- Content Security Policy
-- static asset paths
-- cache state
+- configured base/public URL;
+- HTTPS redirects;
+- reverse-proxy path handling;
+- static asset paths;
+- browser developer-console errors;
+- Content Security Policy;
+- cache state.
 
-## After an upgrade
+## Problems after an upgrade
 
-If the problem started after upgrading:
+Use this sequence:
 
-1. Confirm the target version was installed completely.
-2. Check migration status.
-3. Review release notes.
-4. Confirm persistent files were preserved.
-5. Check logs.
-6. If necessary, restore the pre-upgrade backup.
+1. confirm the target version was installed completely;
+2. check migration state;
+3. read the target release notes;
+4. confirm persistent files/configuration were preserved;
+5. inspect logs;
+6. if necessary, roll back using the pre-upgrade backup.
 
-See:
-
-```text
-docs/UPGRADE.md
-docs/BACKUP-RESTORE.md
-```
+See **[Upgrade Guide](UPGRADE.md)** and **[Backup & Restore](BACKUP-RESTORE.md)**.
 
 ## Disk-space problems
 
-Check free space on:
+Check free space for:
 
-- application filesystem
-- database storage
-- Docker volume storage
-- backup destination
+- application filesystem;
+- database storage;
+- Docker volume storage;
+- backup destination.
 
-Low disk space can cause database and upload failures.
+Low disk space can cause apparently unrelated database, upload, logging, and migration failures.
 
 ## Reverse proxy and HTTPS
 
-If Talvoro is behind a reverse proxy, confirm:
+Confirm:
 
-- correct upstream target
-- correct public hostname
-- HTTPS forwarding
-- forwarded protocol/host headers
-- websocket support if Talvoro uses it in a future release
-- no conflicting redirect loops
+- correct upstream service;
+- correct public hostname;
+- HTTPS forwarding;
+- forwarded protocol/host headers;
+- no redirect loop;
+- required protocol support for the Talvoro version.
 
 ## Before opening a GitHub issue
 
@@ -211,30 +217,33 @@ Search existing issues first.
 
 Include:
 
-- Talvoro version
-- deployment type
-- environment information
-- reproduction steps
-- expected behavior
-- actual behavior
-- sanitized logs
+- Talvoro version;
+- deployment type;
+- environment details;
+- reproduction steps;
+- expected result;
+- actual result;
+- sanitized logs.
 
-Do not include:
+Do **not** include:
 
-- passwords
-- API keys
-- session cookies
-- private keys
-- `.env` contents
-- raw production database dumps
-- private customer/user information
+```text
+passwords
+API keys
+session cookies
+private keys
+.env contents
+production database dumps
+private customer/user data
+```
 
 ## Security vulnerabilities
 
-Do not report a suspected security vulnerability as a normal public issue.
+> [!CAUTION]
+> Do not report a suspected security vulnerability as a normal public issue.
 
-Follow the instructions in:
+Follow **[SECURITY.md](../SECURITY.md)** and use the private reporting path when available.
 
-```text
-SECURITY.md
-```
+---
+
+[← Documentation home](README.md)

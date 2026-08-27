@@ -1,111 +1,131 @@
-# Talvoro Backup and Restore
+<div align="center">
 
-A Talvoro backup must protect the data required to reconstruct a working site.
+# Talvoro Backup & Restore
 
-Copying only the application source code is not a complete backup.
+### A backup is only useful when it can rebuild a working site.
 
-## What to back up
+**[Documentation](README.md)** · **[Upgrade Guide](UPGRADE.md)** · **[Troubleshooting](TROUBLESHOOTING.md)**
 
-At minimum, identify and protect:
+</div>
 
-- database
-- uploaded media and files
-- site-specific configuration
-- environment-specific settings
-- other persistent Talvoro data
+---
 
-Application release files can normally be downloaded again from the official repository, but site data cannot.
+> [!IMPORTANT]
+> Copying Talvoro application source code is **not** a complete backup. Site data, uploads, configuration, and other persistent state must be protected separately.
 
-## Backup rule
+## What a complete backup protects
 
-Use the 3-2-1 principle where practical:
+| Area | Examples |
+| --- | --- |
+| Database | Content, accounts, settings, application state |
+| Uploaded files | Media and user/site uploads |
+| Site configuration | Environment-specific values that cannot be recreated from the release |
+| Persistent application data | Other runtime data stored outside the release package |
 
-- 3 copies of important data
-- 2 different storage media or systems
-- 1 copy stored separately from the live server
+Application release files can normally be downloaded again. Your site data cannot.
+
+## The 3-2-1 baseline
+
+Where practical, keep:
+
+| Rule | Meaning |
+| --- | --- |
+| **3 copies** | The live data plus at least two backup copies |
+| **2 storage types/systems** | Reduce dependence on one storage failure mode |
+| **1 off-host copy** | Keep a copy away from the live Talvoro server |
+
+> [!TIP]
+> A backup strategy is stronger when it includes automated creation, independent storage, retention rules, and periodic restore tests.
+
+## Before every upgrade
+
+Create a recovery point **before** changing the running site:
+
+1. back up the database;
+2. back up uploads;
+3. back up site-specific configuration;
+4. record the installed Talvoro version;
+5. verify that backup files are non-empty and readable;
+6. preferably perform a test restore in a non-production environment.
 
 ## Database backup
 
-Use the backup tool appropriate for the deployed database.
+Use the backup tooling appropriate for your database version and deployment.
 
-For MySQL/MariaDB, a logical dump may be suitable.
-
-Example pattern:
+A MySQL/MariaDB logical backup may look like:
 
 ```bash
-mysqldump --single-transaction --routines --triggers   -h <host> -u <user> -p <database> > talvoro-database.sql
+mysqldump --single-transaction --routines --triggers \
+  -h <host> -u <user> -p <database> > talvoro-database.sql
 ```
 
-Exact options depend on your environment and database version.
+Exact flags depend on the environment.
 
-Protect database dumps because they may contain private or sensitive site data.
+> [!WARNING]
+> Database dumps may contain authentication data, private content, email addresses, configuration, and other sensitive information. Protect them like production data.
 
 ## Uploaded files
 
-Back up the complete persistent upload directory or volume.
+Back up the complete persistent upload path or volume.
 
 Preserve:
 
-- filenames
-- directory structure
-- permissions where relevant
+- filenames;
+- directory structure;
+- permissions where they matter.
 
-## Configuration
+A database-only backup cannot reconstruct media that exists only on disk.
 
-Back up site-specific configuration that cannot be reconstructed from the release package.
+## Configuration and secrets
+
+Back up site-specific configuration that cannot be regenerated.
 
 Never publish backups containing:
 
-- passwords
-- API keys
-- private keys
-- session secrets
-- database credentials
+- passwords;
+- database credentials;
+- API keys;
+- session secrets;
+- private keys;
+- production `.env` contents.
 
-## Docker backups
+If backups contain secrets, encrypt and access-control them appropriately.
 
-For Docker deployments, identify persistent volumes before backing up.
+## Docker deployments
 
-Useful commands may include:
+Identify persistent volumes first:
 
 ```bash
 docker compose config
 docker volume ls
 ```
 
-Do not assume container filesystems are persistent.
+The backup should cover the actual Talvoro and database data volumes.
 
-The backup should cover the data volumes used by Talvoro and its database.
+> [!CAUTION]
+> Containers are replaceable. Do not treat a container filesystem as persistent storage unless the deployment explicitly says it is.
 
-## Web-hosting backups
+## Traditional web hosting
 
-Traditional hosting usually requires:
+A typical hosting backup requires both:
 
-- database export
-- file backup of uploads and configuration
+- a database export;
+- a file backup containing uploads and required site-specific configuration.
 
-Many hosting control panels provide both database and file backup features.
-
-Confirm whether your hosting provider's backup includes databases or only files.
-
-## Backup before upgrade
-
-Before every Talvoro upgrade:
-
-1. Create a database backup.
-2. Back up uploads.
-3. Back up site-specific configuration.
-4. Record the installed Talvoro version.
-5. Verify that backup files are non-empty and readable.
-6. Preferably test the restore in a non-production environment.
+Control-panel backups vary. Confirm whether the provider backs up **both database and files**, how long backups are retained, and how restores are performed.
 
 ## Backup naming
 
-Use clear names containing:
+Make backups easy to identify.
 
-- Talvoro version
-- site/environment
-- date and time
+Include:
+
+```text
+application version
+environment/site
+date or timestamp
+data type
+```
 
 Example:
 
@@ -116,83 +136,98 @@ talvoro-v0.15.0-production-2026-08-27-uploads.tar.gz
 
 ## Retention
 
-Choose a retention policy suitable for the importance and rate of change of the site.
+Choose retention based on the importance and change rate of the site.
 
-A reasonable starting point may include:
+A reasonable starting model can include:
 
-- several recent daily backups
-- several weekly backups
-- monthly archival backups
+- recent daily backups;
+- several weekly backups;
+- monthly archival backups.
 
-Adapt retention to available storage and business requirements.
+Adjust for business requirements, legal obligations, storage limits, and recovery objectives.
 
-## Restore prerequisites
+## Restore planning
 
 Before restoring, determine:
 
-- Talvoro version associated with the backup
-- database version
-- deployment type
-- required runtime version
-- whether encryption keys or secrets are needed
-- whether the target installation contains newer data that will be lost
+| Question | Why it matters |
+| --- | --- |
+| Which Talvoro version created the backup? | Application/schema compatibility |
+| Which database version was used? | Import/compatibility behavior |
+| Docker or Web Hosting? | Different deployment restore steps |
+| Which runtime version is required? | Application compatibility |
+| Which secrets/keys are required? | Site may not start without them |
+| Will current data be overwritten? | Restore can destroy newer production changes |
 
-A restore may overwrite current production data.
+> [!CAUTION]
+> A restore can overwrite current production data. Understand the target state before proceeding.
 
-## Restore process
+## General restore process
 
-General restore flow:
-
-1. Put the site into maintenance mode or stop write traffic.
-2. Stop Talvoro services if required.
-3. Back up the current broken state if it may help investigation.
-4. Restore the application version compatible with the backup.
-5. Restore the database.
-6. Restore uploads and persistent files.
-7. Restore required configuration and secrets.
-8. Verify permissions.
-9. Start Talvoro.
-10. Run smoke checks.
+1. stop or isolate write traffic;
+2. stop Talvoro services if required;
+3. optionally preserve the current broken state for investigation;
+4. restore the Talvoro application version compatible with the backup;
+5. restore the database;
+6. restore uploads and other persistent files;
+7. restore required configuration/secrets;
+8. verify permissions;
+9. start Talvoro;
+10. run post-restore checks.
 
 ## Database restore
 
-For MySQL/MariaDB, a logical restore may look like:
+A MySQL/MariaDB logical restore may look like:
 
 ```bash
 mysql -h <host> -u <user> -p <database> < talvoro-database.sql
 ```
 
-The exact command depends on your environment.
+Exact commands vary by environment.
 
 Do not import a production dump into an unrelated live database.
 
-## Post-restore checks
+## Post-restore checklist
 
 Confirm:
 
-- public site loads
-- administrator login works
-- content exists
-- uploaded media loads
-- site settings are correct
-- database writes succeed
-- scheduled functions operate if configured
-- Talvoro version matches the restored schema
+- public pages load;
+- administrator sign-in works;
+- expected content exists;
+- uploaded media loads;
+- settings are correct;
+- database writes succeed;
+- new uploads work;
+- scheduled functions operate if configured;
+- the Talvoro application version matches the restored schema/state.
 
 ## Test restores
 
-Periodically test backups by restoring them to a separate environment.
+> [!IMPORTANT]
+> A successful backup command does not prove recoverability.
 
-A successful backup command does not guarantee that the resulting backup can actually restore a working site.
+Periodically restore backups to a separate environment and confirm the result behaves as a working Talvoro site.
 
-## Security
+Record:
 
-Backups can be more sensitive than the live application because they often contain the entire site dataset.
+- restore duration;
+- missing manual steps;
+- required secrets;
+- unexpected permission issues;
+- any changes needed in the recovery runbook.
+
+## Backup security
+
+Backups can be more sensitive than the live application because they may contain the entire site dataset.
 
 Protect them with:
 
-- restricted access
-- encryption where appropriate
-- secure transfer
-- off-host storage
-- defined retention and deletion policies
+- restricted access;
+- encryption where appropriate;
+- secure transfer;
+- off-host storage;
+- explicit retention and deletion rules.
+
+---
+
+[← Documentation home](README.md) · [Upgrade guide →](UPGRADE.md)

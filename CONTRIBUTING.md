@@ -1,378 +1,298 @@
-Contributing to Talvoro
+<div align="center">
 
-Thank you for your interest in contributing to Talvoro.
+# Contributing to Talvoro
 
-Talvoro is a modern, privacy-focused, self-hosted CMS intended to support both Docker deployments and traditional web hosting.
+### Focused changes. Clear tests. Privacy-first decisions.
 
-The project is still in active pre-1.0 development, so architecture, APIs, packaging, migrations, and contribution rules may continue to evolve.
+Thank you for helping make Talvoro more reliable, secure, and useful.
 
-Before You Start
+**[Project README](README.md)** · **[Documentation](docs/README.md)** · **[Development Guide](docs/DEVELOPMENT.md)** · **[Security](SECURITY.md)**
+
+</div>
+
+---
+
+> [!IMPORTANT]
+> Talvoro is in active pre-1.0 development. Architecture, APIs, migrations, packaging, and contribution rules may continue to evolve.
+
+> [!CAUTION]
+> **Security vulnerabilities must not be reported in public issues, discussions, or pull requests.** Follow [SECURITY.md](SECURITY.md).
+
+## Before you start
 
 Please:
 
-search existing issues and pull requests before creating a new one
+- search existing issues and pull requests;
+- keep the change focused on one clear purpose;
+- avoid mixing unrelated refactors with functional work;
+- never include credentials, private data, production backups, or real user data;
+- discuss large architectural changes before investing substantial implementation effort.
 
-keep changes focused on one clear purpose
+## Branch model
 
-avoid mixing unrelated refactors with feature work
+```text
+feature/*   fix/*   docs/*
+       \      |      /
+             dev
+              ↓
+             main
+              ↓
+      signed vX.Y.Z tag
+```
 
-never include secrets, private data, credentials, production backups, or real user data
+| Branch | Purpose |
+| --- | --- |
+| `main` | Stable/released code |
+| `dev` | Integration branch for the next release |
+| `feature/*` | Focused feature work |
+| `fix/*` | Focused bug fixes |
+| `docs/*` | Documentation-only changes |
 
-report security vulnerabilities privately rather than through a public issue
+Normal contribution pull requests target:
 
-For security issues, see:
-
-SECURITY.md
-
-Branch Model
-
-Talvoro uses a simple branch structure:
-
-main
-└── stable and released code
-
+```text
 dev
-└── integration branch for the next Talvoro release
+```
 
-feature/*
-fix/*
-docs/*
-└── short-lived working branches
+Do not open ordinary feature/fix PRs directly against `main`.
 
-Normal development work should target dev.
+## Create a working branch
 
-Do not open ordinary feature or bug-fix pull requests directly against main.
+Start from current `dev`:
 
-Official releases are created from main.
-
-Create a Working Branch
-
-Start from the latest dev branch:
-
+```bash
 git switch dev
-git pull
+git pull --ff-only origin dev
+```
 
-Create a focused working branch.
+Create a focused branch:
+
+```bash
+git switch -c feature/example
+```
 
 Examples:
 
+```text
 feature/media-library
 feature/installer-validation
 fix/session-timeout
 fix/webhosting-permissions
 docs/docker-installation
+```
 
-Create the branch:
+## Make the change complete
 
-git switch -c feature/example
+When relevant, update:
 
-Make Your Changes
-
-Keep the change as small and focused as reasonably possible.
-
-Where applicable, update:
-
-application code
-
-automated tests
-
-database migrations
-
-installation documentation
-
-upgrade documentation
-
-user-facing documentation
-
-release packaging logic
+| Area | Expectation |
+| --- | --- |
+| Application code | Keep the change maintainable and consistent with project structure |
+| Tests | Cover changed behavior where practical |
+| Migrations | Use Talvoro's migration system |
+| Installation docs | Update when deployment/setup changes |
+| Upgrade docs | Update when compatibility or migration behavior changes |
+| User docs | Update when visible behavior changes |
+| Release packaging | Update/test when distribution contents change |
 
 Changes that alter behavior should normally include tests.
 
-Changes that alter deployment, installation, configuration, migrations, or upgrade behavior should update the relevant documentation in the same pull request.
-
-Coding Expectations
+## Coding expectations
 
 Contributions should:
 
-follow the existing project structure and conventions
+- prefer clear, maintainable code over cleverness;
+- follow existing project structure/conventions;
+- avoid unnecessary dependencies;
+- preserve privacy-focused behavior;
+- avoid mandatory external services without prior project discussion;
+- keep supported deployment models working where applicable;
+- fail clearly when an operation cannot be completed safely.
 
-prefer clear and maintainable code over clever code
+Avoid unrelated formatting-only changes inside functional PRs.
 
-avoid unnecessary dependencies
-
-preserve privacy-focused behavior
-
-avoid introducing mandatory external services without prior project discussion
-
-maintain support for the intended Talvoro deployment models where applicable
-
-fail clearly when an operation cannot be completed safely
-
-Avoid unrelated formatting-only changes in functional pull requests.
-
-Privacy Principles
+## Privacy principles
 
 Talvoro is privacy-focused by design.
 
-Contributions should not introduce:
+A contribution should not silently introduce:
 
+```text
 mandatory telemetry
-
 hidden analytics
-
 unnecessary tracking
-
 mandatory cloud accounts
-
 unnecessary third-party requests
+unjustified collection of user data
+```
 
-collection of user data without a clear product requirement
+Any feature that sends data to an external service should be explicit, documented, and carefully reviewed.
 
-Any feature that sends data to an external service should be explicit, documented, and reviewed carefully.
-
-Database Migrations
-
-Database changes must use Talvoro's migration system.
+## Database migrations
 
 Migration contributions should:
 
-be deterministic
+- be deterministic;
+- use stable ordering;
+- fail clearly;
+- preserve supported upgrade paths;
+- include regression coverage where practical;
+- document destructive or irreversible behavior.
 
-use stable ordering
+Normal Talvoro releases must not depend on manual production database edits.
 
-fail clearly on error
+## Tests
 
-avoid silently ignoring migration failures
+Before opening a PR, run the relevant local checks where practical.
 
-preserve supported upgrade paths
+For release-facing changes, the repository release tooling includes:
 
-include regression coverage where practical
+```bash
+./scripts/release/test-release.sh
+./scripts/release/build-release.sh
+./scripts/release/verify-release.sh
+./scripts/release/smoke-release-packages.sh
+```
 
-document destructive or irreversible changes
+CI should also validate application behavior, installer behavior, migrations, syntax/static rules, and security checks as applicable.
 
-Do not rely on manual production database edits as part of a normal Talvoro release.
+Do not merge while required checks are failing.
 
-Tests
+If a meaningful test cannot be added, explain why in the PR.
 
-Before opening a pull request, run the relevant test suite locally where possible.
+## Commit messages
 
-The Talvoro CI pipeline is intended to validate:
+Use concise messages that describe the change.
 
-application tests
+Good:
 
-installer behavior
-
-database migrations
-
-regression checks
-
-release packaging
-
-Docker builds
-
-syntax/static validation
-
-security sanity checks
-
-A pull request should not be merged while required checks are failing.
-
-If a test cannot reasonably be added, explain why in the pull request.
-
-Commit Messages
-
-Use clear commit messages that describe what changed.
-
-Good examples:
-
+```text
 Add Docker installer validation
 Fix session timeout handling
 Document web-hosting upgrade process
 Prevent invalid migration ordering
+```
 
-Avoid vague messages such as:
+Avoid:
 
+```text
 fix
 changes
 update stuff
 wip
+```
 
-Small, logical commits are preferred.
+Small logical commits are preferred.
 
-Pull Requests
+## Pull requests
 
-Open pull requests against:
+Open ordinary contribution PRs against `dev`.
 
-dev
+A good PR description answers:
 
-A pull request should explain:
-
-what changed
-
-why the change is needed
-
-how it was tested
-
-whether database migrations are included
-
-whether installation or upgrade behavior changes
-
-whether documentation was updated
-
-any known limitations or follow-up work
+- What changed?
+- Why is it needed?
+- How was it tested?
+- Are migrations included?
+- Does installation/deployment change?
+- Does upgrade behavior change?
+- Was documentation updated?
+- Are there limitations or follow-up tasks?
 
 Screenshots are useful for meaningful UI changes.
 
-Keep pull requests focused enough to review and test safely.
-
-Pull Request Review
-
-A contribution may require changes before it can be merged.
+## Review criteria
 
 Review may consider:
 
-correctness
-
-maintainability
-
-security
-
-privacy
-
-UX impact
-
-migration safety
-
-deployment compatibility
-
-test coverage
-
-documentation
-
-release packaging impact
+| Area | Questions |
+| --- | --- |
+| Correctness | Does the change do what it claims? |
+| Maintainability | Is the implementation clear and sustainable? |
+| Security | Does it expand attack surface or weaken safeguards? |
+| Privacy | Does it introduce new data collection or third-party traffic? |
+| UX | Is user-facing behavior coherent and accessible? |
+| Migration safety | Are existing installations protected? |
+| Deployment | Do Docker/Web Hosting paths remain valid? |
+| Tests | Is changed behavior adequately validated? |
+| Documentation | Can users/operators understand the change? |
+| Packaging | Does the release boundary remain clean? |
 
 Approval does not guarantee immediate inclusion in a release.
 
-Versioning
+## Versioning
 
 Talvoro follows Semantic Versioning:
 
+```text
 MAJOR.MINOR.PATCH
+```
 
 Examples:
 
+```text
 0.15.0
 0.15.1
 0.16.0
 1.0.0
+```
 
-Pre-release tags may include:
+Pre-release tags may use forms such as:
 
+```text
 v0.16.0-alpha.1
 v0.16.0-beta.1
 v0.16.0-rc.1
+```
 
-Contributors generally should not change the release version unless the contribution is specifically part of release preparation.
+Contributors generally should not change `VERSION` unless the contribution is explicitly release preparation.
 
-The authoritative project version is intended to be stored in:
+## Release trust
 
-VERSION
+Official releases are generated from the exact signed version tag and publish:
 
-Release Process
-
-Official Talvoro releases follow this flow:
-
-feature/* / fix/* / docs/*
-          ↓
-         dev
-          ↓
-         main
-          ↓
-   signed vX.Y.Z tag
-          ↓
- automated release workflow
-
-Release artifacts are intended to include:
-
+```text
 talvoro-vX.Y.Z.zip
+talvoro-vX.Y.Z.zip.sigstore.json
+
 talvoro-vX.Y.Z-docker.zip
+talvoro-vX.Y.Z-docker.zip.sigstore.json
+
 talvoro-vX.Y.Z-webhosting.zip
+talvoro-vX.Y.Z-webhosting.zip.sigstore.json
+
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
+```
 
-All release packages must be generated from the exact same tagged commit.
+GitHub provenance attestations are generated as part of the protected release workflow.
 
-The signed Git tag is the canonical source reference for an official release.
+Contributors do **not** need access to release signing private keys. Human signing keys stay with maintainers; artifact signing is handled by the protected release process.
 
-Signed Releases
+See [GitHub Releases & Verification](docs/GITHUB-RELEASES.md).
 
-Official release signing is handled by the Talvoro release process.
-
-Contributors must never commit:
-
-release-signing private keys
-
-signing passwords
-
-hardware-token secrets
-
-CI signing secrets
-
-Release automation must fail rather than publish a release when required signing or verification fails.
-
-Security Vulnerabilities
-
-Do not disclose suspected security vulnerabilities in:
-
-public GitHub Issues
-
-public Discussions
-
-pull requests
-
-public comments
-
-public proof-of-concept repositories
-
-Follow the reporting process in:
-
-SECURITY.md
-
-Security fixes may be developed privately until users have a reasonable opportunity to update.
-
-Never Commit Secrets
+## Never commit secrets
 
 Do not commit:
 
-.env files containing real credentials
+- `.env` files containing real credentials;
+- database passwords;
+- API keys;
+- access tokens;
+- SSH/TLS private keys;
+- release-signing private keys;
+- production database dumps;
+- real user data;
+- private backups.
 
-database passwords
+> [!CAUTION]
+> If a secret is committed, assume exposure and rotate/revoke it immediately. Deleting it in a later commit is not enough.
 
-API keys
+## Release packaging
 
-access tokens
+Release packages should exclude development-only/private files, including:
 
-SSH private keys
-
-TLS private keys
-
-release-signing private keys
-
-production database dumps
-
-real user data
-
-private backups
-
-If a secret is accidentally committed, assume it has been exposed and rotate or revoke it immediately.
-
-Deleting it in a later commit is not sufficient.
-
-Release Packaging
-
-Release packages must not contain development-only or private files unless explicitly required.
-
-Examples of files that should normally be excluded:
-
+```text
 .git/
 local .env files
 IDE metadata
@@ -385,99 +305,77 @@ private keys
 developer secrets
 user uploads
 Docker volumes
+```
 
-Packaging changes should be tested for all affected distribution types.
+Packaging changes should be tested across every affected distribution.
 
-Documentation
+## Documentation
 
-Documentation lives alongside the source code.
+Documentation lives with the source.
 
-Important files include:
+The documentation hub is:
 
-README.md
-SECURITY.md
-CONTRIBUTING.md
+**[docs/README.md](docs/README.md)**
 
-docs/
-├── INSTALL-DOCKER.md
-├── INSTALL-WEB-HOSTING.md
-├── UPGRADE.md
-├── BACKUP-RESTORE.md
-├── TROUBLESHOOTING.md
-└── DEVELOPMENT.md
+Update documentation when a change affects installation, deployment, upgrades, configuration, migrations, release verification, or user-visible behavior.
 
-Please update documentation when your change affects installation, deployment, upgrades, configuration, or user-visible behavior.
+## Issues
 
-Issues
+Public GitHub Issues are appropriate for:
 
-GitHub Issues can be used for:
+- reproducible bugs;
+- feature proposals;
+- documentation problems;
+- non-sensitive technical discussions.
 
-reproducible bugs
+A useful bug report includes:
 
-feature proposals
-
-documentation problems
-
-non-sensitive technical discussions
-
-A useful bug report should include:
-
-Talvoro version
-
-deployment type
-
-environment
-
-reproduction steps
-
-expected behavior
-
-actual behavior
-
-relevant sanitized logs
+- Talvoro version;
+- deployment type;
+- environment;
+- reproduction steps;
+- expected behavior;
+- actual behavior;
+- sanitized logs.
 
 Never include credentials or sensitive production data.
 
-Feature Proposals
+## Feature proposals
 
-For larger changes, open an issue before investing substantial implementation effort.
+For larger changes, describe:
 
-Describe:
+- the problem;
+- proposed behavior;
+- user benefit;
+- Docker/Web Hosting impact;
+- migration implications;
+- privacy/security implications;
+- alternatives considered.
 
-the problem being solved
+Early discussion can prevent substantial work on a direction that does not fit Talvoro.
 
-the proposed behavior
-
-expected user benefit
-
-impact on Docker and web-hosting deployments
-
-migration implications
-
-privacy/security implications
-
-alternatives considered
-
-This helps avoid significant work on a direction that may not fit the project.
-
-License and Contribution Terms
+## License and contribution terms
 
 Talvoro's final project license is still being determined.
 
-Until a repository license and contribution terms are explicitly published, contributors should review the current repository status before submitting substantial code.
+Until repository license and contribution terms are explicitly published, review the current repository status before submitting substantial code.
 
-Do not contribute code that you do not have the right to submit.
+Do not contribute code you do not have the right to submit or copy code from incompatible/proprietary sources.
 
-Do not copy code from incompatible or proprietary sources.
-
-Code of Conduct
+## Community conduct
 
 A formal Code of Conduct may be added as the community grows.
 
-In the meantime, keep discussions professional, constructive, and focused on improving Talvoro.
+Until then, keep discussions professional, constructive, and focused on improving Talvoro.
 
-Thank You
+---
 
-Every thoughtful bug report, documentation improvement, test, review, and code contribution can help make Talvoro more reliable and useful.
+<div align="center">
 
-Thank you for contributing.
+### Thank you
+
+Thoughtful bug reports, documentation, tests, reviews, and code contributions all help Talvoro improve.
+
+[Documentation](docs/README.md) · [Security](SECURITY.md)
+
+</div>

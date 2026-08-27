@@ -1,10 +1,34 @@
-# Install Talvoro on Traditional Web Hosting
+<div align="center">
 
-This guide describes the Talvoro installation path for conventional web hosting without Docker.
+# Install Talvoro on Web Hosting
 
-> Talvoro is still in active pre-1.0 development. Hosting requirements and installer behavior may change before version 1.0.
+### A clean deployment path for conventional PHP/MySQL hosting.
 
-## Package
+**[Documentation](README.md)** · **[Distributions](DISTRIBUTIONS.md)** · **[Backup & Restore](BACKUP-RESTORE.md)** · **[Troubleshooting](TROUBLESHOOTING.md)**
+
+</div>
+
+---
+
+> [!IMPORTANT]
+> Talvoro is in active pre-1.0 development. Hosting requirements and installer behavior may change. Always follow the release notes for the exact version you are installing.
+
+## Before you begin
+
+A typical compatible hosting environment is expected to provide:
+
+| Requirement | Guidance |
+| --- | --- |
+| PHP | A version supported by the selected Talvoro release |
+| Database | MySQL or MariaDB |
+| HTTPS | Required for production |
+| Filesystem | Write access only to directories Talvoro actually needs |
+| Web root | Ability to serve the release's intended public directory/layout |
+| PHP extensions | The common extensions required by the selected release |
+
+Confirm the release requirements with your hosting provider before uploading Talvoro.
+
+## 1. Download the Web Hosting release
 
 Download:
 
@@ -12,58 +36,47 @@ Download:
 talvoro-vX.Y.Z-webhosting.zip
 ```
 
-Also download:
+For verification, also download:
 
 ```text
+talvoro-vX.Y.Z-webhosting.zip.sigstore.json
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
 ```
 
-## 1. Verify the release
+## 2. Verify the release
 
-Verify the downloaded ZIP before uploading it to your hosting account.
+If you downloaded only the Web Hosting ZIP:
 
-Linux:
+**Linux**
 
 ```bash
-sha256sum -c SHA256SUMS.txt
+grep '  talvoro-vX.Y.Z-webhosting.zip$' SHA256SUMS.txt | sha256sum -c -
 ```
 
-macOS:
+**macOS**
 
 ```bash
-shasum -a 256 -c SHA256SUMS.txt
+grep '  talvoro-vX.Y.Z-webhosting.zip$' SHA256SUMS.txt | shasum -a 256 -c -
 ```
 
-Do not install a package that fails checksum or signature verification.
+Verify the Sigstore bundle and optional GitHub provenance using **[GitHub Releases & Verification](GITHUB-RELEASES.md#verify-an-official-release)**.
 
-## 2. Hosting requirements
+> [!CAUTION]
+> Stop if release verification fails.
 
-The exact requirements for each Talvoro release will be listed in that release's notes.
+## 3. Create a dedicated database
 
-A typical installation is expected to require:
+In the hosting control panel:
 
-- a supported PHP version
-- MySQL or MariaDB
-- HTTPS
-- writable directories required by Talvoro
-- common PHP extensions required by the application
-- permission to configure the site's document root or web directory as required by the release
+1. create a MySQL or MariaDB database;
+2. create a dedicated database user;
+3. grant that user only the permissions required for the Talvoro database;
+4. record the database host, port, name, username, and password securely.
 
-Before uploading Talvoro, confirm that your hosting plan meets the requirements for the selected release.
+Do not reuse an unnecessarily privileged database account shared with unrelated applications.
 
-## 3. Create the database
-
-In your hosting control panel:
-
-1. Create a new MySQL or MariaDB database.
-2. Create a dedicated database user.
-3. Assign the user only the permissions required for the Talvoro database.
-4. Record the database host, port, database name, username, and password.
-
-Do not reuse a database user with unnecessary access to unrelated databases.
-
-## 4. Upload the package
+## 4. Upload and extract the package
 
 Upload:
 
@@ -71,138 +84,125 @@ Upload:
 talvoro-vX.Y.Z-webhosting.zip
 ```
 
-to the directory selected for the site.
+to the directory chosen for the site, then extract it using the hosting control panel or SSH access.
 
-Extract the archive using your hosting control panel or SSH access.
-
-Avoid extracting over an existing production installation unless the release-specific upgrade instructions explicitly tell you to do so.
+> [!WARNING]
+> Do not extract a fresh-install package over an existing production site unless the target release's upgrade instructions explicitly tell you to do so.
 
 ## 5. Configure the document root
 
-Talvoro may use a public web directory depending on the release structure.
+Use the public/document-root layout documented by the selected release.
 
-If your hosting provider supports changing the document root, point the domain to the directory documented by the release.
+If your host lets you choose the domain's document root, point it to the directory intended to be web-accessible.
 
-Do not expose internal application files directly to the web unless Talvoro's package structure explicitly intends them to be public.
+Internal application files, credentials, backups, logs, and protected configuration must not be exposed directly to the web.
 
-## 6. File permissions
+## 6. Set safe permissions
 
-Use the most restrictive permissions that still allow Talvoro to operate correctly.
+Use the most restrictive permissions that still let Talvoro operate.
 
-Do not make the entire application world-writable.
+Avoid:
 
-Only directories that Talvoro needs to write to should receive write permissions for the web-server user.
+```text
+world-writable application trees
+```
+
+Grant write access only where Talvoro needs it, such as supported upload or generated-data paths.
 
 ## 7. Open the installer
 
 Visit your Talvoro domain in a browser.
 
-The installer should perform environment checks and request the information needed to complete setup.
+The installer should validate the environment and request the information needed for setup, typically including:
 
-Typical setup data may include:
-
-- database host
-- database name
-- database username
-- database password
-- site name
-- administrator account details
-
-## 8. Complete installation
+- database host/name/user/password;
+- site name;
+- administrator account details.
 
 Allow Talvoro to initialize the required database schema.
 
-When setup finishes:
+## 8. Validate the installation
 
-- sign in to the administrator area
-- confirm the site loads correctly
-- confirm uploads work
-- confirm database-backed settings persist
-- review security-related settings
-- configure mail only if required
+After setup, confirm:
+
+- the public site loads;
+- administrator sign-in works;
+- content/settings persist;
+- uploads work;
+- HTTPS is active;
+- sensitive files are not directly accessible;
+- mail works if you configured it.
 
 ## 9. Protect sensitive files
 
-Production hosting must not publicly expose sensitive files such as:
+Production hosting must not publicly expose:
 
-- environment files
-- credentials
-- backup archives
-- logs containing private data
-- application secrets
-- private keys
+- environment files;
+- credentials;
+- backup archives;
+- private keys;
+- logs containing private information;
+- internal application files not intended for public access.
 
-Where supported, use the web server or hosting control panel to block access to sensitive paths.
+Use the host's web-server configuration or control panel to block protected paths where necessary.
 
-## 10. HTTPS
+## 10. Establish backups
 
-Use HTTPS for every production Talvoro installation.
+Before adding important content, confirm you can back up and restore:
 
-Enable a trusted TLS certificate through your hosting provider or another supported certificate mechanism.
+- the Talvoro database;
+- uploaded files;
+- site-specific configuration;
+- other persistent Talvoro data.
 
-## 11. Backups
-
-Before adding content or customizing the site, confirm that you know how to back up:
-
-- the Talvoro database
-- uploaded files
-- site-specific configuration
-
-See:
-
-```text
-docs/BACKUP-RESTORE.md
-```
-
-## 12. Updating
-
-Use:
-
-```text
-docs/UPGRADE.md
-```
-
-Do not treat an upgrade as a fresh installation.
-
-Before every upgrade:
-
-1. Read release notes.
-2. Verify the new package.
-3. Create a full backup.
-4. Confirm the backup can be restored.
-5. Follow the version-specific migration instructions.
+See **[Backup & Restore](BACKUP-RESTORE.md)**.
 
 ## Shared-hosting limitations
 
-Some providers restrict:
+Some hosting providers restrict:
 
-- PHP versions or extensions
-- cron jobs
-- file permissions
-- command-line access
-- background processes
-- database features
-- maximum upload size
-- execution time
+| Area | Possible limitation |
+| --- | --- |
+| PHP | Available versions or extensions |
+| Database | Features, versions, connection policies |
+| Jobs | Cron/background-process availability |
+| Files | Permissions, quotas, upload size |
+| CLI | SSH or command-line access |
+| Runtime | Execution time and memory limits |
 
-If Talvoro reports an environment requirement that the host cannot provide, contact the hosting provider or use a compatible host.
+If a Talvoro environment check requires something the hosting plan cannot provide, use a compatible plan/host rather than bypassing the requirement.
 
-## Troubleshooting
+## Updating Talvoro
 
-See:
+Treat an upgrade differently from a fresh installation.
 
-```text
-docs/TROUBLESHOOTING.md
-```
+Before every upgrade:
 
-Before reporting a problem, collect:
+1. read the target release notes;
+2. verify the release package;
+3. create a complete backup;
+4. confirm the backup is usable;
+5. preserve uploads and protected configuration;
+6. follow the release-specific migration instructions.
 
-- Talvoro version
-- PHP version
-- database type and version
-- hosting environment
-- exact error message
-- relevant sanitized logs
-- steps to reproduce the issue
+See **[Upgrading Talvoro](UPGRADE.md)**.
 
-Never publish passwords, secrets, private keys, or database dumps in a public issue.
+## Before requesting support
+
+Collect:
+
+- Talvoro version;
+- PHP version;
+- database type and version;
+- hosting environment;
+- exact error message;
+- reproduction steps;
+- relevant **sanitized** logs.
+
+Never publish passwords, tokens, private keys, `.env` contents, or production database dumps in an issue.
+
+See **[Troubleshooting](TROUBLESHOOTING.md)**.
+
+---
+
+[← Documentation home](README.md) · [Upgrade guide →](UPGRADE.md)
