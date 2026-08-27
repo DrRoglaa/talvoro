@@ -1,318 +1,215 @@
+<div align="center">
+
 # Talvoro
 
-**A modern, privacy\-focused, self\-hosted CMS for Docker and traditional web hosting\.**
+### Self-hosted. Private. Yours.
 
-Talvoro is an independent content management system designed for people who want a clean, capable publishing platform without unnecessary cloud dependencies, tracking, or vendor lock\-in\.
+A modern, privacy-focused content management system for people who want a capable publishing platform without unnecessary cloud dependencies, tracking, or vendor lock-in.
 
-> **Project status:** Talvoro is under active development and has not yet reached version 1.0.
+[![Release checks](https://github.com/DrRoglaa/talvoro/actions/workflows/release-checks.yml/badge.svg?branch=main)](https://github.com/DrRoglaa/talvoro/actions/workflows/release-checks.yml)
+![Status](https://img.shields.io/badge/status-pre--1.0-5b5bd6)
+![Self-hosted](https://img.shields.io/badge/self--hosted-yes-2ea44f)
+![Privacy](https://img.shields.io/badge/privacy-first-0f766e)
+![Docker](https://img.shields.io/badge/Docker-supported-2496ED?logo=docker&logoColor=white)
+![Web hosting](https://img.shields.io/badge/web%20hosting-supported-6B7280)
 
----
+**[Docker installation](docs/INSTALL-DOCKER.md)** ·
+**[Web hosting installation](docs/INSTALL-WEB-HOSTING.md)** ·
+**[Documentation](docs/)** ·
+**[Security](SECURITY.md)** ·
+**[Contributing](CONTRIBUTING.md)**
 
-## About Talvoro
-
-Talvoro is being built around a few simple principles:
-
-- Self\-hosted by design
-- Privacy\-focused
-- No mandatory external services
-- Simple administration
-- Modern and responsive interface
-- Docker\-friendly
-- Traditional web\-hosting support
-- Straightforward backup and upgrade workflows
-- Open development
-
-The goal is to make Talvoro easy to run whether you have your own Docker server, VPS, home server, development machine, or conventional web hosting\.
+</div>
 
 ---
 
-## Project Status
+> [!IMPORTANT]
+> **Talvoro is in active pre-1.0 development.** Breaking changes may still occur while the architecture, installer, upgrade system, APIs, administration experience, and release workflow mature. Review release notes and create a backup before upgrading.
 
-Talvoro is currently in active pre\-1\.0 development\.
+## Why Talvoro
 
-Breaking changes may still occur while the architecture, installer, upgrade system, administration experience, APIs, and release workflow are being finalized\.
+Talvoro is built around a straightforward idea: **your website and your data should remain under your control**.
 
-For production use, always review the release notes and create a backup before upgrading\.
+| Principle | What it means |
+| --- | --- |
+| **Self-hosted by design** | Run Talvoro on your own VPS, server, development machine, home server, or compatible web host. |
+| **Privacy-focused** | No mandatory analytics, tracking services, cloud account, or external platform is required to operate the CMS. |
+| **Flexible deployment** | Use Docker where it fits, or deploy to traditional PHP/MySQL-compatible web hosting. |
+| **Simple administration** | A clean, modern interface without unnecessary operational complexity. |
+| **Predictable maintenance** | Backups, upgrades, release packaging, and verification are treated as first-class workflows. |
+| **Verifiable releases** | Official packages are built from signed version tags and protected by checksums, Sigstore signatures, and provenance attestations. |
 
----
+## Get started
 
-## Installation and Downloads
+Official Talvoro releases provide three distributions generated from the same tagged source version.
 
-Official Talvoro releases provide three distributions built from the same tagged source version\.
+| Distribution | Package | Best for | Guide |
+| --- | --- | --- | --- |
+| **Source / Standard** | `talvoro-vX.Y.Z.zip` | Developers, advanced users, and custom deployments | [Distribution details](docs/DISTRIBUTIONS.md) |
+| **Docker** | `talvoro-vX.Y.Z-docker.zip` | VPSs, Docker servers, home servers, and local development | [Install with Docker](docs/INSTALL-DOCKER.md) |
+| **Web Hosting** | `talvoro-vX.Y.Z-webhosting.zip` | Conventional hosting where Docker is unavailable | [Install on web hosting](docs/INSTALL-WEB-HOSTING.md) |
 
-### Source / Standard
+> [!TIP]
+> If you are unsure which package to choose, start with **Docker** when you control the server. Choose **Web Hosting** when your provider gives you a traditional PHP/MySQL hosting environment.
+
+### Traditional web-hosting flow
+
+1. Download the Web Hosting release ZIP.
+2. Upload and extract it on your hosting account.
+3. Create a MySQL/MariaDB database.
+4. Open your domain in a browser.
+5. Complete the Talvoro installer.
+6. Create the administrator account.
+7. Start building your site.
+
+For deployment-specific requirements and details, use the installation guides above.
+
+## Release integrity
+
+Talvoro treats release authenticity as part of the product, not as an afterthought.
+
+```text
+main
+  ↓
+cryptographically verified annotated vX.Y.Z tag
+  ↓
+exact tagged commit + VERSION validation
+  ↓
+release regression tests
+  ↓
+deterministic Source / Docker / Web Hosting builds
+  ↓
+archive verification + SHA-256 checksums
+  ↓
+Docker / Web Hosting smoke tests
+  ↓
+Sigstore signature bundle for every ZIP + SHA256SUMS.txt
+  ↓
+GitHub build provenance attestations
+  ↓
+protected release approval
+  ↓
+GitHub Release
+```
+
+An official release is expected to contain:
 
 ```text
 talvoro-vX.Y.Z.zip
-```
+talvoro-vX.Y.Z.zip.sigstore.json
 
-For developers, custom deployments, advanced users, and anyone who wants a clean Talvoro application package without Docker\-specific packaging\.
-
-### Docker
-
-```text
 talvoro-vX.Y.Z-docker.zip
-```
+talvoro-vX.Y.Z-docker.zip.sigstore.json
 
-For:
-
-- VPS environments
-- Docker servers
-- home servers
-- development machines
-- other Docker\-capable systems
-
-Full instructions will be maintained in:
-
-```text
-docs/INSTALL-DOCKER.md
-```
-
-### Traditional Web Hosting
-
-```text
 talvoro-vX.Y.Z-webhosting.zip
-```
+talvoro-vX.Y.Z-webhosting.zip.sigstore.json
 
-For conventional web\-hosting environments where Docker is not available\.
-
-The goal is to make installation as straightforward as possible:
-
-1. Download the release ZIP\.
-2. Upload and extract it on your hosting\.
-3. Create a MySQL/MariaDB database\.
-4. Open your domain\.
-5. Complete the Talvoro installer\.
-6. Create the administrator account\.
-7. Start building your site\.
-
-Full instructions will be maintained in:
-
-```text
-docs/INSTALL-WEB-HOSTING.md
-```
-
----
-
-## Canonical Source
-
-The canonical source of every official Talvoro release is the exact Git commit referenced by its signed version tag in the official GitHub repository\.
-
-Example:
-
-```text
-v0.15.0
-```
-
-All release packages are generated from that same tagged source so the Source / Standard, Docker, and Web Hosting distributions cannot drift apart\.
-
-Official repository:
-
-```text
-https://github.com/DrRoglaa/talvoro
-```
-
----
-
-## Releases
-
-Stable Talvoro releases are published from the `main` branch and tagged using Semantic Versioning\.
-
-Examples:
-
-```text
-v0.15.0
-v0.15.1
-v0.16.0
-v1.0.0
-```
-
-Each official release is planned to include:
-
-```text
-talvoro-vX.Y.Z.zip
-talvoro-vX.Y.Z-docker.zip
-talvoro-vX.Y.Z-webhosting.zip
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
 ```
 
-Official releases use signed version tags and signed release verification data so users can confirm both authenticity and integrity\.
+A release must fail rather than publish incomplete, inconsistent, unverified, or unsigned artifacts.
 
----
+### Verify a release
 
-## Verify a Release
+Verify package hashes:
 
-Every official release includes SHA\-256 checksums for all Talvoro distribution packages\.
-
-Example `SHA256SUMS.txt`:
-
-```text
-<sha256>  talvoro-vX.Y.Z.zip
-<sha256>  talvoro-vX.Y.Z-docker.zip
-<sha256>  talvoro-vX.Y.Z-webhosting.zip
-```
-
-Verify the downloaded files with:
+**Linux**
 
 ```bash
 sha256sum -c SHA256SUMS.txt
 ```
 
-The checksum manifest is also cryptographically signed:
+**macOS**
 
-```text
-SHA256SUMS.txt.sig
+```bash
+shasum -a 256 -c SHA256SUMS.txt
 ```
 
-Signature verification instructions will be documented alongside the Talvoro release\-signing system\.
+Each deployment ZIP and `SHA256SUMS.txt` also has its own Sigstore bundle, and GitHub records build provenance attestations for the release assets.
 
-A release must not be published if required signing or verification steps fail\.
+For the complete verification procedure, including Cosign and GitHub attestation commands, see **[GitHub Releases & Verification](docs/GITHUB-RELEASES.md#verify-an-official-release)**.
 
----
+## Project status
 
-## Development Branches
+Talvoro is currently being developed toward a stable `1.0.0` release.
 
-Talvoro uses a simple development model:
+The pre-1.0 phase is being used to harden:
 
-```text
-main
-└── stable and released code
+- installation and upgrade behavior;
+- database migrations and compatibility checks;
+- content and administration workflows;
+- Docker and traditional-hosting distributions;
+- release reproducibility and verification;
+- security and recovery procedures;
+- the public extension and API surface.
 
-dev
-└── development of the next Talvoro release
+Production users should treat pre-1.0 upgrades carefully and always maintain a current backup.
 
-feature/*
-fix/*
-docs/*
-└── short-lived development branches
-```
+## Development model
 
-Normal development work is merged into `dev`\.
-
-When a release is ready:
+Talvoro uses a deliberately small branch model:
 
 ```text
-feature/* / fix/* / docs/*
-          ↓
-         dev
-          ↓
-         main
-          ↓
-   signed vX.Y.Z tag
-          ↓
- automated release workflow
+feature/*   fix/*   docs/*
+       \      |      /
+             dev
+              ↓
+             main
+              ↓
+      signed vX.Y.Z tag
+              ↓
+     automated release workflow
 ```
 
----
+- `main` contains stable/released code.
+- `dev` contains development for the next Talvoro release.
+- `feature/*`, `fix/*`, and `docs/*` are short-lived working branches.
 
-## Automated Releases
+Normal development is merged into `dev`. Release-ready work is promoted from `dev` to `main`, validated again, and only then tagged for publication.
 
-Talvoro’s release workflow is intended to:
-
-1. Validate the version\.
-2. Confirm the Git tag matches the Talvoro version\.
-3. Run automated tests\.
-4. Validate database migrations\.
-5. Build the Source / Standard release package\.
-6. Build the Docker release package\.
-7. Build the traditional web\-hosting release package\.
-8. Smoke\-test the generated packages\.
-9. Generate SHA\-256 checksums\.
-10. Sign the release verification data\.
-11. Create the GitHub Release\.
-12. Attach the verified release artifacts\.
-
-A release must fail rather than publish incomplete, inconsistent, or unsigned artifacts\.
-
----
-
-## Updating Talvoro
-
-Upgrade instructions will be maintained in:
-
-```text
-docs/UPGRADE.md
-```
-
-Always create a full backup before upgrading\.
-
----
-
-## Backup and Restore
-
-Talvoro documentation will include procedures for safely backing up and restoring:
-
-- database data
-- uploaded files
-- site configuration
-- persistent application data
-
-Documentation:
-
-```text
-docs/BACKUP-RESTORE.md
-```
-
----
-
-## Privacy
-
-Privacy is a core design principle of Talvoro\.
-
-Talvoro should not require unnecessary third\-party analytics, mandatory cloud accounts, or external tracking services in order to operate\.
-
-Site owners remain in control of their installation and data\.
-
----
-
-## Security
-
-Please do not publicly disclose security vulnerabilities through a normal GitHub issue\.
-
-Security reporting instructions will be maintained in:
-
-```text
-SECURITY.md
-```
-
-Critical security fixes for supported Talvoro versions are intended to remain available to all supported users\.
-
----
+See **[Development](docs/DEVELOPMENT.md)** and **[Releasing](docs/RELEASING.md)** for the detailed workflow.
 
 ## Documentation
 
-Documentation will be maintained alongside the source code\.
+| Topic | Document |
+| --- | --- |
+| Docker installation | [docs/INSTALL-DOCKER.md](docs/INSTALL-DOCKER.md) |
+| Traditional web hosting | [docs/INSTALL-WEB-HOSTING.md](docs/INSTALL-WEB-HOSTING.md) |
+| Distribution formats | [docs/DISTRIBUTIONS.md](docs/DISTRIBUTIONS.md) |
+| Upgrading | [docs/UPGRADE.md](docs/UPGRADE.md) |
+| Backup and restore | [docs/BACKUP-RESTORE.md](docs/BACKUP-RESTORE.md) |
+| Troubleshooting | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
+| Development | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Release process | [docs/RELEASING.md](docs/RELEASING.md) |
+| GitHub release verification | [docs/GITHUB-RELEASES.md](docs/GITHUB-RELEASES.md) |
+| Design system | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
 
-Planned documentation includes:
+## Privacy
 
-```text
-docs/
-├── INSTALL-DOCKER.md
-├── INSTALL-WEB-HOSTING.md
-├── UPGRADE.md
-├── BACKUP-RESTORE.md
-├── TROUBLESHOOTING.md
-└── DEVELOPMENT.md
-```
+Privacy is a core Talvoro design principle.
 
----
+Talvoro should not require unnecessary third-party analytics, mandatory cloud accounts, or external tracking services in order to operate. Site owners remain in control of their installation and data.
+
+## Security
+
+Please **do not report suspected security vulnerabilities through a public GitHub issue, discussion, pull request, or other public channel**.
+
+Public disclosure before a fix is available may place Talvoro installations at unnecessary risk.
+
+Follow the private reporting process described in **[SECURITY.md](SECURITY.md)**.
+
+Critical security fixes for supported Talvoro versions are intended to remain available to all supported users.
 
 ## Contributing
 
-Talvoro is developed publicly\.
+Talvoro is developed publicly, and thoughtful contributions are welcome.
 
-Contribution guidelines will be maintained in:
-
-```text
-CONTRIBUTING.md
-```
-
----
+Before opening a pull request, read **[CONTRIBUTING.md](CONTRIBUTING.md)** and use the `dev` branch as the normal integration target unless the contribution guidelines specify otherwise.
 
 ## Versioning
 
-Talvoro follows Semantic Versioning:
+Talvoro follows [Semantic Versioning](https://semver.org/):
 
 ```text
 MAJOR.MINOR.PATCH
@@ -321,13 +218,13 @@ MAJOR.MINOR.PATCH
 Examples:
 
 ```text
-0.15.0   New functionality
-0.15.1   Bug fixes
-0.16.0   Next feature milestone
-1.0.0    First stable major release
+0.15.0   feature milestone
+0.15.1   patch release
+0.16.0   next feature milestone
+1.0.0    first stable major release
 ```
 
-Pre\-release versions may use tags such as:
+Pre-release tags may use forms such as:
 
 ```text
 v0.16.0-alpha.1
@@ -335,16 +232,20 @@ v0.16.0-beta.1
 v0.16.0-rc.1
 ```
 
----
-
 ## License
 
-The Talvoro license will be published before the first stable release\.
+The Talvoro license will be published before the first stable release.
 
-Until a license is explicitly added to this repository, no additional rights should be assumed beyond those provided by applicable copyright law\.
+Until a license is explicitly added to this repository, no additional rights should be assumed beyond those provided by applicable copyright law.
 
 ---
 
-## Talvoro
+<div align="center">
 
-**Self\-hosted\. Private\. Yours\.**
+### Talvoro
+
+**Self-hosted. Private. Yours.**
+
+Built for people who want to own their publishing stack.
+
+</div>
