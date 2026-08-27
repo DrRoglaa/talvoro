@@ -1,0 +1,8 @@
+Options -Indexes
+
+<FilesMatch "^(\.env(?:\..*)?|composer\.(json|lock)|release\.json|VERSION|Dockerfile|compose\.ya?ml|Caddyfile)$">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(?:app|bootstrap|database|resources|storage|config|docker|bin|scripts|packaging|dist|routes|docs)(?:/|$) - [F,L]

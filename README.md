@@ -89,7 +89,7 @@ The goal is to make installation as straightforward as possible:
 Full instructions will be maintained in:
 
 ```text
-docs/INSTALL-WEBHOSTING.md
+docs/INSTALL-WEB-HOSTING.md
 ```
 
 ---
@@ -289,7 +289,7 @@ Planned documentation includes:
 ```text
 docs/
 ├── INSTALL-DOCKER.md
-├── INSTALL-WEBHOSTING.md
+├── INSTALL-WEB-HOSTING.md
 ├── UPGRADE.md
 ├── BACKUP-RESTORE.md
 ├── TROUBLESHOOTING.md

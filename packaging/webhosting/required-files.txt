@@ -1,0 +1,15 @@
+VERSION
+release.json
+README.md
+composer.json
+.htaccess
+bootstrap/app.php
+public/index.php
+public/.htaccess
+app/Core/helpers.php
+app/Core/UpdateManager.php
+database/migrations/019_design_system.sql
+bin/check.php
+bin/check-v0150.php
+docs/DISTRIBUTIONS.md
+docs/INSTALL-WEB-HOSTING.md

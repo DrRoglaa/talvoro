@@ -1,0 +1,1 @@
+<section class="status-page"><span>405</span><h1>Method not allowed</h1><p>This request method is not supported for the selected page.</p><a class="button" href="/">Go home</a></section>

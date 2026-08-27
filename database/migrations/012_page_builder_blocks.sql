@@ -1,0 +1,2 @@
+ALTER TABLE pages
+    ADD COLUMN IF NOT EXISTS blocks_json LONGTEXT NULL AFTER body_html;

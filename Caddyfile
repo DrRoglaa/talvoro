@@ -1,0 +1,26 @@
+:80 {
+    root * /srv/app/public
+    encode zstd gzip
+
+    @assets path /assets/* /uploads/themes/* /uploads/site/* /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png
+    header @assets Cache-Control "public, max-age=300, must-revalidate"
+
+    @blocked_upload_code path_regexp blocked_upload_code (?i)^/uploads/.*[.](php|phtml|phar|cgi|pl|py|rb|sh|exe|dll|so|js|mjs|html|htm|svg|xml)$
+    respond @blocked_upload_code 404
+
+    php_fastcgi app:9000 {
+        root /var/www/html/public
+    }
+
+    file_server
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        Cross-Origin-Opener-Policy "same-origin"
+        X-Permitted-Cross-Domain-Policies "none"
+        Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    }
+}
