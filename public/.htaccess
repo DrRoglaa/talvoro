@@ -1,0 +1,22 @@
+Options -Indexes
+RewriteEngine On
+
+# Defense in depth: uploaded/theme assets are data, never executable code.
+RewriteRule ^uploads/.*\.(php|phtml|phar|cgi|pl|py|rb|sh|exe|dll|so|js|mjs|html|htm|svg|xml)$ - [F,NC]
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+</IfModule>
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

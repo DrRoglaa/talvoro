@@ -1,0 +1,13 @@
+{
+  "name": "indie/talvoro",
+  "description": "Talvoro — secure, self-hosted PHP CMS",
+  "type": "project",
+  "require": {
+    "php": "^8.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "CMS\\": "app/"
+    }
+  }
+}

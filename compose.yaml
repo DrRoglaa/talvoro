@@ -1,0 +1,58 @@
+services:
+  app:
+    image: talvoro:${TALVORO_IMAGE_TAG:-local}
+    build:
+      context: .
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_NAME: ${APP_NAME:-}
+      APP_ENV: ${APP_ENV:-}
+      APP_DEBUG: ${APP_DEBUG:-}
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: ${APP_URL:-}
+      APP_TIMEZONE: ${APP_TIMEZONE:-}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-}
+      ANALYTICS_ENABLED: ${ANALYTICS_ENABLED:-}
+      ANALYTICS_RESPECT_DNT: ${ANALYTICS_RESPECT_DNT:-}
+      ANALYTICS_IGNORE_BOTS: ${ANALYTICS_IGNORE_BOTS:-}
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mariadb:12.3.2
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - cms-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./:/srv/app:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  cms-db:

@@ -1,0 +1,23 @@
+.env
+/vendor/
+.DS_Store
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/cache/*
+!/storage/cache/.gitkeep
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep
+/storage/config.php
+/storage/config.pending.php
+/storage/installed.lock
+/storage/backups/*
+!/storage/backups/.gitkeep
+/storage/update/*
+!/storage/update/.gitkeep
+
+# Release engineering output
+/dist/
+/.release-build/
+/.dist-previous-*
