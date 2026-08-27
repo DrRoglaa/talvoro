@@ -66,6 +66,21 @@ jobs:
             exit 1
           fi
 
+      - name: Notify brrr when main is release-ready
+        if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          BRRR_WEBHOOK_SECRET: ${{ secrets.BRRR_WEBHOOK_SECRET }}
+          BRRR_WEBHOOK_URL: ${{ secrets.BRRR_WEBHOOK_URL }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          ./scripts/release/notify-brrr.sh \
+            "Talvoro ${VERSION} is ready for release" \
+            "main passed all release checks. Create the signed v${VERSION} tag when ready." \
+            "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            'active'
+
       - name: Notify brrr on failed branch check
         if: ${{ failure() && github.event_name == 'push' }}
         continue-on-error: true
