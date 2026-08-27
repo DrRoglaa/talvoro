@@ -14,7 +14,10 @@ from pathlib import Path, PurePosixPath
 
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 PRIVATE_PATTERNS = [
-    re.compile(rb"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(rb"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----"),
+    re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
+    re.compile(rb"AGE-SECRET-KEY-1[0-9A-Z]+"),
+    re.compile(rb"minisign encrypted secret key", re.IGNORECASE),
     re.compile(rb"AKIA[0-9A-Z]{16}"),
     re.compile(rb"github_pat_[A-Za-z0-9_]{30,}"),
     re.compile(rb"gh[pousr]_[A-Za-z0-9]{30,}"),
@@ -32,10 +35,11 @@ COMMON_SKIP_FILES = {
     ".env", ".DS_Store", "Thumbs.db", "release.json", "SHA256SUMS.txt",
     ".phpunit.result.cache",
 }
-DANGEROUS_NAMES = {"id_rsa", "id_ed25519", "id_dsa", "id_ecdsa"}
+DANGEROUS_NAMES = {"id_rsa", "id_ed25519", "id_dsa", "id_ecdsa", "secring.gpg"}
 DANGEROUS_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".kdbx", ".sqlite", ".sqlite3", ".db", ".dump"}
 TEXT_SCAN_LIMIT = 2 * 1024 * 1024
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
+RELEASE_ARCHIVE_RE = re.compile(r"^talvoro-v[0-9]+\.[0-9]+\.[0-9]+(?:-(?:docker|webhosting))?\.zip$")
 
 
 def fail(message: str) -> None:
@@ -69,9 +73,13 @@ def should_skip_common(rel: PurePosixPath) -> bool:
         return False
     if rel.parts[0] in COMMON_SKIP_TOP:
         return True
+    if rel.parts[0].startswith(".dist-previous-"):
+        return True
     if len(rel.parts) >= 2 and rel.parts[0] == "scripts" and rel.parts[1] == "release":
         return True
     if rel.name in COMMON_SKIP_FILES:
+        return True
+    if len(rel.parts) == 1 and RELEASE_ARCHIVE_RE.fullmatch(rel.name):
         return True
     if rel.name.endswith((".log", ".tmp", ".swp", ".swo", ".orig", ".rej", "~")):
         return True
@@ -117,6 +125,15 @@ def validate_source(root: Path, version: str) -> None:
     if not SEMVER_RE.fullmatch(version):
         fail(f"VERSION is not X.Y.Z: {version}")
 
+    minimum_path = root / "packaging" / "MINIMUM_UPDATE_VERSION"
+    if not minimum_path.is_file():
+        fail("packaging/MINIMUM_UPDATE_VERSION is missing.")
+    minimum_version = minimum_path.read_text(encoding="utf-8").strip()
+    if not SEMVER_RE.fullmatch(minimum_version):
+        fail(f"MINIMUM_UPDATE_VERSION is not X.Y.Z: {minimum_version!r}")
+    if tuple(map(int, minimum_version.split("."))) > tuple(map(int, version.split("."))):
+        fail(f"MINIMUM_UPDATE_VERSION {minimum_version} cannot be newer than release VERSION {version}.")
+
     manifest_path = root / "release.json"
     if manifest_path.is_file():
         try:
@@ -150,12 +167,14 @@ def validate_source(root: Path, version: str) -> None:
             rel = PurePosixPath(path.relative_to(root).as_posix())
         except ValueError:
             continue
-        if rel.parts and rel.parts[0] in {".git", "dist", ".release-build"}:
+        if rel.parts and (rel.parts[0] in {".git", "dist", ".release-build"} or rel.parts[0].startswith(".dist-previous-")):
             continue
         if path.is_symlink():
             fail(f"Symlink found in release source: {rel}. Symlinks are rejected for deterministic/safe packaging.")
         if not path.is_file():
             continue
+        if len(rel.parts) == 1 and RELEASE_ARCHIVE_RE.fullmatch(rel.name):
+            fail(f"Generated Talvoro release archive found outside dist/: {rel}. Remove/move old manual artifacts before building.")
         lower_name = rel.name.lower()
         if lower_name in DANGEROUS_NAMES or rel.suffix.lower() in {".pem", ".key", ".p12", ".pfx", ".kdbx"}:
             fail(f"Dangerous private/signing file found in source tree: {rel}")
@@ -284,7 +303,7 @@ def forbidden_archive_path(rel: PurePosixPath) -> str | None:
     return None
 
 
-def verify_one_archive(repo_root: Path, archive: Path, version: str, distribution: str) -> None:
+def verify_one_archive(repo_root: Path, archive: Path, version: str, distribution: str, minimum_version: str) -> None:
     if not archive.is_file() or archive.stat().st_size <= 0:
         fail(f"Missing or empty archive: {archive.name}")
     try:
@@ -355,6 +374,8 @@ def verify_one_archive(repo_root: Path, archive: Path, version: str, distributio
     minimum = str(manifest.get("minimum_version", ""))
     if not SEMVER_RE.fullmatch(minimum):
         fail(f"Invalid minimum_version in {archive.name}.")
+    if minimum != minimum_version:
+        fail(f"minimum_version mismatch in {archive.name}: expected {minimum_version}, got {minimum}.")
     manifest_files = manifest.get("files")
     if not isinstance(manifest_files, dict) or not manifest_files:
         fail(f"release.json has no file manifest in {archive.name}.")
@@ -384,13 +405,19 @@ def verify_one_archive(repo_root: Path, archive: Path, version: str, distributio
 
 
 def verify_archives(repo_root: Path, output: Path, version: str) -> None:
+    minimum_path = repo_root / "packaging" / "MINIMUM_UPDATE_VERSION"
+    if not minimum_path.is_file():
+        fail("packaging/MINIMUM_UPDATE_VERSION is missing during verification.")
+    minimum_version = minimum_path.read_text(encoding="utf-8").strip()
+    if not SEMVER_RE.fullmatch(minimum_version):
+        fail(f"MINIMUM_UPDATE_VERSION is invalid during verification: {minimum_version!r}")
     expected = {
         "source": output / f"talvoro-v{version}.zip",
         "docker": output / f"talvoro-v{version}-docker.zip",
         "webhosting": output / f"talvoro-v{version}-webhosting.zip",
     }
     for distribution, archive in expected.items():
-        verify_one_archive(repo_root, archive, version, distribution)
+        verify_one_archive(repo_root, archive, version, distribution, minimum_version)
 
 
 def verify_checksum_manifest(output: Path, version: str) -> None:

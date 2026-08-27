@@ -57,7 +57,7 @@ Run the release-packaging regression suite:
 ./scripts/release/test-release.sh
 ```
 
-The verification checks archive integrity, package root safety, required/forbidden files, generated `release.json` manifests, application version propagation, distribution independence, obvious secret/private-key material, and `SHA256SUMS.txt`.
+The verification checks archive integrity, package root safety, required/forbidden files, generated `release.json` manifests, application/minimum-version propagation, distribution independence, obvious secret/private-key material, and `SHA256SUMS.txt`.
 
 ## Reproducibility
 
@@ -67,7 +67,7 @@ The tradeoff is modestly larger ZIP files. Talvoro's current application is smal
 
 ## Secret safety
 
-Local `.env` is an expected development file and is never copied into a package. The release source validation fails on likely private/signing key files and database dumps, while package verification additionally scans shipped text for common high-confidence private-key/token formats. This is a release guardrail, not a replacement for repository secret scanning.
+Local `.env` is an expected development file and is never copied into a package. The release source validation fails on likely private/signing key files (including common PEM, PGP, age and minisign forms), database dumps, impossible minimum-version metadata and old Talvoro release ZIPs left at the repository root. Interrupted `.dist-previous-*` promotion directories are always excluded. Package verification additionally scans shipped text for common high-confidence private-key/token formats. This is a release guardrail, not a replacement for repository secret scanning.
 
 Private signing keys never belong in the repository, release scripts, examples or GitHub Actions YAML.
 

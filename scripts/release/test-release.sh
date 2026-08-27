@@ -56,6 +56,33 @@ with zipfile.ZipFile(p) as z:
     assert json.loads(z.read('talvoro/release.json'))['version']==version
 PY
 
+python3 - "$base/dist" "$version" <<'PY'
+from pathlib import Path
+import json, sys, zipfile
+dist=Path(sys.argv[1]); version=sys.argv[2]
+expected={
+    f'talvoro-v{version}.zip':'source',
+    f'talvoro-v{version}-docker.zip':'docker',
+    f'talvoro-v{version}-webhosting.zip':'webhosting',
+}
+for filename, distribution in expected.items():
+    with zipfile.ZipFile(dist/filename) as z:
+        names=set(z.namelist())
+        assert 'talvoro/.env' not in names
+        assert not any(n.startswith('talvoro/dist/') or n.startswith('talvoro/.dist-previous-') for n in names)
+        assert z.read('talvoro/VERSION').decode().strip()==version
+        manifest=json.loads(z.read('talvoro/release.json'))
+        assert manifest['version']==version
+        assert manifest['distribution']==distribution
+        if distribution=='webhosting':
+            assert 'talvoro/Dockerfile' not in names
+            assert 'talvoro/compose.yaml' not in names
+            assert 'talvoro/docker/php.ini' not in names
+        else:
+            assert 'talvoro/Dockerfile' in names
+            assert 'talvoro/compose.yaml' in names
+PY
+
 printf '%s\n' '[TEST] deterministic byte-for-byte ZIP writer'
 deterministic_root="$tmp/deterministic"
 mkdir -p "$deterministic_root"
@@ -87,16 +114,49 @@ rm -f "$base/release.json"
 
 printf '%s\n' '[TEST] likely private key file fails'
 printf '%s\n' 'not-a-real-key' > "$base/accidental-release.key"
-if (cd "$base" && ./scripts/release/build-release.sh >/dev/null 2>&1); then release_die 'Build unexpectedly succeeded with a private-key file.'; fi
+if python3 "$base/scripts/release/release_utils.py" validate-source "$base" "$version" >/dev/null 2>&1; then release_die 'Source validation unexpectedly accepted a private-key file.'; fi
 rm -f "$base/accidental-release.key"
-hash_manifest "$base/dist" > "$tmp/after-failures.sha"
-cmp -s "$before_failures" "$tmp/after-failures.sha" || release_die 'A failed release build replaced the last successful dist/.'
 
-printf '%s\n' '[TEST] no recursive dist packaging on repeated builds'
-python3 - "$base/dist/talvoro-v$version.zip" <<'PY'
-import sys, zipfile
-with zipfile.ZipFile(sys.argv[1]) as z:
-    assert not any(n.startswith('talvoro/dist/') for n in z.namelist())
+printf '%s\n' '[TEST] armored signing key material fails even with an innocuous filename'
+printf '%s\n' '-----BEGIN PGP PRIVATE KEY BLOCK-----' 'fake-test-material' '-----END PGP PRIVATE KEY BLOCK-----' > "$base/notes.txt"
+if python3 "$base/scripts/release/release_utils.py" validate-source "$base" "$version" >/dev/null 2>&1; then release_die 'Source validation unexpectedly accepted armored private-key material.'; fi
+rm -f "$base/notes.txt"
+
+printf '%s\n' '[TEST] minimum update version cannot exceed release VERSION'
+cp "$base/packaging/MINIMUM_UPDATE_VERSION" "$base/packaging/MINIMUM_UPDATE_VERSION.saved"
+printf '99.0.0\n' > "$base/packaging/MINIMUM_UPDATE_VERSION"
+if python3 "$base/scripts/release/release_utils.py" validate-source "$base" "$version" >/dev/null 2>&1; then release_die 'Source validation unexpectedly accepted an impossible minimum update version.'; fi
+mv "$base/packaging/MINIMUM_UPDATE_VERSION.saved" "$base/packaging/MINIMUM_UPDATE_VERSION"
+
+printf '%s\n' '[TEST] old manually generated release ZIP outside dist fails safely'
+printf 'old release bytes\n' > "$base/talvoro-v0.14.7.zip"
+if python3 "$base/scripts/release/release_utils.py" validate-source "$base" "$version" >/dev/null 2>&1; then release_die 'Source validation unexpectedly accepted a generated Talvoro archive at repository root.'; fi
+rm -f "$base/talvoro-v0.14.7.zip"
+
+printf '%s\n' '[TEST] stale interrupted-release directory is never packaged'
+mkdir -p "$base/.dist-previous-stale"
+printf 'must never ship\n' > "$base/.dist-previous-stale/stale.txt"
+stale_stage="$tmp/stale-stage/talvoro"
+python3 "$base/scripts/release/release_utils.py" stage "$base" "$stale_stage" source
+python3 - "$stale_stage" <<'PY'
+from pathlib import Path
+import sys
+root=Path(sys.argv[1])
+assert not any(p.relative_to(root).parts[0].startswith('.dist-previous-') for p in root.rglob('*'))
+PY
+rm -rf "$base/.dist-previous-stale"
+
+hash_manifest "$base/dist" > "$tmp/after-failures.sha"
+cmp -s "$before_failures" "$tmp/after-failures.sha" || release_die 'Failure or stale-directory safety checks changed the verified dist/ unexpectedly.'
+
+printf '%s\n' '[TEST] existing dist is excluded from subsequent staging'
+repeat_stage="$tmp/repeat-stage/talvoro"
+python3 "$base/scripts/release/release_utils.py" stage "$base" "$repeat_stage" source
+python3 - "$repeat_stage" <<'PY'
+from pathlib import Path
+import sys
+root=Path(sys.argv[1])
+assert not (root/'dist').exists()
 PY
 
 printf '\nAll Talvoro release-packaging tests passed.\n'
