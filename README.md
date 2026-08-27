@@ -15,9 +15,10 @@ A modern, privacy-focused content management system for people who want a capabl
 
 **[Docker installation](docs/INSTALL-DOCKER.md)** ·
 **[Web hosting installation](docs/INSTALL-WEB-HOSTING.md)** ·
-**[Documentation](docs/)** ·
+**[Documentation](docs/README.md)** ·
 **[Security](SECURITY.md)** ·
-**[Contributing](CONTRIBUTING.md)**
+**[Contributing](CONTRIBUTING.md)** ·
+**[Support Talvoro](SUPPORT.md)**
 
 </div>
 
@@ -206,6 +207,20 @@ Critical security fixes for supported Talvoro versions are intended to remain av
 Talvoro is developed publicly, and thoughtful contributions are welcome.
 
 Before opening a pull request, read **[CONTRIBUTING.md](CONTRIBUTING.md)** and use the `dev` branch as the normal integration target unless the contribution guidelines specify otherwise.
+
+## Support Talvoro
+
+Talvoro is independently developed and maintained. Optional support helps fund continued development, testing, documentation, infrastructure, and security work.
+
+Support is planned through:
+
+- **PayPal** for convenient one-time support;
+- **Bitcoin** for direct Bitcoin support.
+
+See **[SUPPORT.md](SUPPORT.md)** for the official payment details and verification guidance.
+
+> [!NOTE]
+> Supporting Talvoro is completely optional. Sponsorship does not change access to the Community edition or critical security updates for supported versions, and it does not purchase roadmap priority or special product access.
 
 ## Versioning
 

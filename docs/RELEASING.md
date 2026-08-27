@@ -1,37 +1,74 @@
-# Talvoro release engineering
+<div align="center">
 
-This document is for Talvoro maintainers. End users should follow the installation guide for their chosen distribution.
+# Talvoro Release Engineering
 
-## Release source of truth
+### Deterministic packages first. Signing and publication second.
 
-`VERSION` at the repository root is the authoritative application release version. It must contain one `X.Y.Z` value and nothing else.
+**Maintainer documentation**
 
-Official releases follow this trust chain:
+**[Documentation](README.md)** · **[GitHub Releases](GITHUB-RELEASES.md)** · **[Distributions](DISTRIBUTIONS.md)** · **[Development](DEVELOPMENT.md)**
+
+</div>
+
+---
+
+> [!IMPORTANT]
+> End users should follow the installation guide for their distribution. This document describes maintainer-facing release engineering.
+
+## Source of truth
+
+The repository-root:
 
 ```text
-signed Git tag
-      -> exact tagged source
-      -> ./scripts/release/build-release.sh
-      -> three verified distributions
-      -> SHA256SUMS.txt
-      -> cryptographic signature / provenance
+VERSION
 ```
 
-The exact Git commit referenced by the signed tag is the canonical source. The Source / Standard ZIP is a deployment distribution and is not called the canonical source.
+is Talvoro's authoritative application release version and must contain one `X.Y.Z` value.
 
-`packaging/MINIMUM_UPDATE_VERSION` is separate compatibility metadata for Talvoro's updater; it is not a second application-version source.
+The exact Git commit referenced by the verified signed release tag is the canonical release source.
 
-## Build all distributions
+`packaging/MINIMUM_UPDATE_VERSION` is separate updater-compatibility metadata, not another version source.
+
+## Trust chain
+
+```text
+verified signed vX.Y.Z tag
+        ↓
+exact tagged source + VERSION
+        ↓
+release regression suite
+        ↓
+deterministic Source / Docker / Web Hosting builds
+        ↓
+archive + release.json verification
+        ↓
+SHA256SUMS.txt
+        ↓
+Docker/Web Hosting smoke tests
+        ↓
+individual Sigstore signatures
+        ↓
+GitHub provenance attestations
+        ↓
+protected publication
+```
+
+## Local validation sequence
 
 From the repository root:
 
 ```bash
+./scripts/release/test-release.sh
 ./scripts/release/build-release.sh
+./scripts/release/verify-release.sh
+./scripts/release/smoke-release-packages.sh
 ```
 
-Requirements for the maintainer build host are Bash, Python 3 and either `sha256sum` (Linux) or `shasum` (macOS). The application itself keeps its existing PHP/Docker runtime requirements.
+A release candidate should not be promoted while any of these fail.
 
-A successful build leaves only the verified release set in `dist/`:
+## Build output
+
+A successful local build leaves the verified unsigned release set in:
 
 ```text
 dist/
@@ -41,59 +78,169 @@ dist/
 └── SHA256SUMS.txt
 ```
 
-The builder stages into `.release-build/` and promotes the output to `dist/` only after every archive and checksum passes verification. A failed build does not replace the last successful `dist/` directory.
+Local release building intentionally stops here.
 
-## Verification and tests
+Official signing/provenance belongs to the protected GitHub release workflow after the exact tag has been verified.
 
-Run verification against an existing `dist/`:
+## Build-host requirements
 
-```bash
-./scripts/release/verify-release.sh
+Maintainer packaging requires:
+
+- Bash;
+- Python 3;
+- `sha256sum` on Linux or `shasum` on macOS.
+
+Talvoro application/runtime requirements are separate.
+
+## Atomic output
+
+The builder stages release output under:
+
+```text
+.release-build/
 ```
 
-Run the release-packaging regression suite:
+and promotes a completed set to:
 
-```bash
-./scripts/release/test-release.sh
+```text
+dist/
 ```
 
-The verification checks archive integrity, package root safety, required/forbidden files, generated `release.json` manifests, application/minimum-version propagation, distribution independence, obvious secret/private-key material, and `SHA256SUMS.txt`.
+only after archive/checksum verification succeeds.
+
+A failed build must not replace the last successful release set.
+
+Interrupted `.dist-previous-*` directories are excluded from release staging.
 
 ## Reproducibility
 
-Talvoro's ZIP writer uses a stable lexicographic file order, a fixed ZIP timestamp, normalized regular-file permissions, no UID/GID metadata, no directory entries and the ZIP `STORE` method. Using `STORE` intentionally avoids zlib/compression-version differences. Identical file contents and executable bits therefore produce byte-for-byte identical release archives across supported Python 3 build hosts.
+Talvoro's ZIP writer intentionally favors deterministic bytes over maximum compression.
 
-The tradeoff is modestly larger ZIP files. Talvoro's current application is small enough that deterministic bytes are preferred over a small compression saving.
+Release ZIPs use:
 
-## Secret safety
+- stable lexicographic file ordering;
+- a fixed ZIP timestamp;
+- normalized regular-file permissions;
+- no UID/GID metadata;
+- no directory entries;
+- ZIP `STORE` mode.
 
-Local `.env` is an expected development file and is never copied into a package. The release source validation fails on likely private/signing key files (including common PEM, PGP, age and minisign forms), database dumps, impossible minimum-version metadata and old Talvoro release ZIPs left at the repository root. Interrupted `.dist-previous-*` promotion directories are always excluded. Package verification additionally scans shipped text for common high-confidence private-key/token formats. This is a release guardrail, not a replacement for repository secret scanning.
+For identical source contents and executable bits, supported Python build hosts should produce byte-for-byte identical release archives.
 
-Private signing keys never belong in the repository, release scripts, examples or GitHub Actions YAML.
+## Release verification
 
-## Signing integration point
+`./scripts/release/verify-release.sh` validates the generated release set, including:
 
-Local release building intentionally stops after verified `SHA256SUMS.txt`. Signing/provenance is a separate post-verification step over that immutable release set. CI must treat signing as required for an official release and must fail before publishing if the signing/provenance step fails.
+- archive integrity;
+- safe package root;
+- required and forbidden files;
+- generated `release.json`;
+- application/minimum-version propagation;
+- distribution independence;
+- common private-key/secret patterns;
+- `SHA256SUMS.txt`.
 
-For GitHub-hosted releases, prefer short-lived/keyless OIDC-backed provenance/signing where it meets the distribution requirements. A hardware-backed or offline maintainer key is the preferred alternative for long-lived human signing keys. Do not store a reusable private signing key in Git, a release ZIP or a plain repository secret when a keyless or hardware-backed design is available.
+## Secret-safety model
 
-## Recommended GitHub release implementation
+Release source validation rejects several high-risk inputs, including likely:
 
-Keep the release logic in this repository and make GitHub Actions call the same scripts used locally. The workflow should be triggered only for a release tag such as `v0.15.0`, then fail immediately unless the tag is exactly `v$(cat VERSION)`.
+- private/signing key files;
+- common PEM/PGP/age/minisign private-key material;
+- database dumps;
+- impossible minimum-version metadata;
+- old Talvoro release ZIPs left at repository root.
 
-Recommended trust and publishing sequence:
+Local `.env` is development/runtime state and must not be copied into release packages.
 
-1. Create the `vX.Y.Z` release tag with a verified SSH or GPG signature. Prefer a hardware-backed maintainer key when practical.
-2. Check out the exact tagged commit in GitHub Actions and run `./scripts/release/build-release.sh` followed by `./scripts/release/verify-release.sh`.
-3. Give only the release job the GitHub OIDC/attestation permissions it needs (`contents: read`, `id-token: write`, `attestations: write`) and create GitHub artifact attestations for the three ZIPs and `SHA256SUMS.txt`.
-4. For a portable explicit signature, use Sigstore/Cosign keyless blob signing on `SHA256SUMS.txt` and publish the generated Sigstore bundle alongside the release assets. This uses short-lived OIDC identity instead of a long-lived signing key stored in the repository.
-5. Enable GitHub immutable releases when the repository is ready to publish official releases that way.
-6. Publish the GitHub Release only after build, verification, attestation and required signing steps all succeed. Any signing/provenance failure must prevent publication.
+> [!NOTE]
+> These checks are a release guardrail. Repository secret scanning and normal security review are still required.
 
-A future workflow may therefore use GitHub's maintained attestation action for provenance and a command conceptually equivalent to:
+## Human signing
+
+The maintainer creates a **signed annotated Git tag** only after the exact release commit is on `main`.
+
+Example:
 
 ```bash
-cosign sign-blob SHA256SUMS.txt --bundle SHA256SUMS.txt.sigstore.json --yes
+git switch main
+git pull --ff-only origin main
+git tag -s v0.15.0 -m "Talvoro v0.15.0"
+git tag -v v0.15.0
+git push origin v0.15.0
 ```
 
-The exact action versions and Cosign invocation should be pinned/reviewed when the workflow is introduced because CI dependencies evolve independently from Talvoro's packaging scripts.
+Git can use SSH or GPG signing according to maintainer configuration.
+
+Private human signing keys stay in the maintainer's protected key store/hardware and are never committed or added to GitHub Actions merely to make release automation work.
+
+## CI artifact signing
+
+The GitHub publish job uses short-lived OIDC identity to keylessly sign:
+
+```text
+talvoro-vX.Y.Z.zip
+talvoro-vX.Y.Z-docker.zip
+talvoro-vX.Y.Z-webhosting.zip
+SHA256SUMS.txt
+```
+
+Each receives:
+
+```text
+<artifact>.sigstore.json
+```
+
+The workflow immediately verifies every generated bundle against the expected GitHub Actions identity before publication.
+
+## Provenance
+
+GitHub build provenance attestations are generated for release assets as part of the protected publish job.
+
+This is independent from the maintainer's signed Git tag and complements Sigstore artifact signatures.
+
+## Release permissions
+
+The workflow intentionally separates:
+
+| Job | Permission model |
+| --- | --- |
+| Build/test | Read-only repository access |
+| Publish | Protected `release` environment with only the write/OIDC/attestation permissions it needs |
+
+Keep publication permission out of routine build/test jobs.
+
+## Official publication
+
+For the complete GitHub process, including environment approval, brrr notifications, asset-set validation, Sigstore identity, and verification commands, use **[GitHub Releases & Verification](GITHUB-RELEASES.md)**.
+
+## Release checklist
+
+Before the official tag:
+
+- `dev` is stable;
+- `VERSION` is correct;
+- release notes are ready;
+- local release regression suite passes;
+- all distributions build;
+- release verification passes;
+- smoke tests pass;
+- `dev` is promoted to `main`;
+- `main` release checks pass.
+
+Before publication:
+
+- tag is annotated and cryptographically verified;
+- tag matches `VERSION`;
+- tagged commit is reachable from `main`;
+- GitHub build job passes;
+- expected release version/commit is reviewed at the `release` environment gate;
+- all Sigstore signatures verify;
+- provenance generation passes;
+- release assets are complete and contain no unexpected files.
+
+> [!CAUTION]
+> Signing, provenance, checksum, smoke-test, or asset-set failures are release blockers. The workflow must fail rather than publish an incomplete release.
+
+---
+
+[← Documentation home](README.md) · [GitHub release workflow →](GITHUB-RELEASES.md)

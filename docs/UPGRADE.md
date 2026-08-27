@@ -1,181 +1,173 @@
+<div align="center">
+
 # Upgrading Talvoro
 
-This guide defines the general Talvoro upgrade process.
+### Verify first. Back up second. Change production last.
 
-> Always read the release notes for the exact version you are installing. Release-specific instructions override this generic guide.
+**[Documentation](README.md)** · **[Backup & Restore](BACKUP-RESTORE.md)** · **[Release Verification](GITHUB-RELEASES.md)** · **[Troubleshooting](TROUBLESHOOTING.md)**
+
+</div>
+
+---
+
+> [!CAUTION]
+> Always read the release notes for the exact target version. Release-specific instructions override this generic guide.
 
 ## Upgrade principles
 
-A Talvoro upgrade should be:
+A safe Talvoro upgrade should be:
 
-- reversible through a verified backup
-- performed from an official release
-- verified before installation
-- migration-aware
-- tested before old backups are removed
+| Principle | Meaning |
+| --- | --- |
+| **Recoverable** | A verified pre-upgrade backup exists |
+| **Authentic** | The target package comes from an official release |
+| **Verified** | Checksums/signatures are validated before installation |
+| **Migration-aware** | Schema/configuration changes are handled explicitly |
+| **Observed** | Post-upgrade health and logs are reviewed |
+| **Reversible** | The old recovery point is kept until the new version is proven stable |
 
 Never assume that replacing application files is the only required step.
 
-## 1. Confirm the upgrade path
+## 1. Confirm the supported upgrade path
 
-Check:
+Record and review:
 
-- currently installed Talvoro version
-- target Talvoro version
-- release notes for all versions you are skipping
-- minimum runtime requirements
-- database migration notes
-- removed or deprecated settings
-- backup compatibility notes
+- currently installed Talvoro version;
+- target Talvoro version;
+- release notes for versions you are skipping;
+- minimum runtime requirements;
+- database migration notes;
+- removed/deprecated settings;
+- backup compatibility notes.
 
-Some future releases may require an intermediate upgrade.
+Some pre-1.0 releases may require an intermediate upgrade.
 
 ## 2. Download the correct distribution
 
-Choose the package matching the installation type:
+Stay with the deployment model your site already uses unless Talvoro explicitly documents a migration between models.
 
 ```text
-talvoro-vX.Y.Z.zip
-talvoro-vX.Y.Z-docker.zip
-talvoro-vX.Y.Z-webhosting.zip
+Source / Standard    talvoro-vX.Y.Z.zip
+Docker               talvoro-vX.Y.Z-docker.zip
+Web Hosting          talvoro-vX.Y.Z-webhosting.zip
 ```
-
-Do not switch deployment types during a normal upgrade unless the release documentation explicitly supports that migration.
 
 ## 3. Verify the release
 
-Download:
+Download the matching ZIP and its Sigstore bundle, plus:
 
 ```text
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
 ```
 
-Verify checksums:
+Use **[GitHub Releases & Verification](GITHUB-RELEASES.md#verify-an-official-release)** to verify SHA-256, Sigstore identity, and optional GitHub provenance.
 
-Linux:
+> [!CAUTION]
+> If verification fails, stop. Do not continue with the upgrade.
 
-```bash
-sha256sum -c SHA256SUMS.txt
-```
+## 4. Create a complete backup
 
-macOS:
+Protect at least:
 
-```bash
-shasum -a 256 -c SHA256SUMS.txt
-```
+- database;
+- uploads;
+- site-specific configuration;
+- persistent application data.
 
-Verify the release signature using the instructions published for the Talvoro signing system.
+See **[Backup & Restore](BACKUP-RESTORE.md)**.
 
-Stop if verification fails.
-
-## 4. Create a full backup
-
-Back up all persistent data.
-
-At minimum:
-
-- database
-- uploaded files
-- site-specific configuration
-- persistent application data
-
-See:
-
-```text
-docs/BACKUP-RESTORE.md
-```
-
-A backup that has never been tested is not a reliable recovery plan.
+> [!IMPORTANT]
+> A backup that has never been tested is not a reliable recovery plan.
 
 ## 5. Record the current state
 
-Before changing anything, record:
+Before changing production, record:
 
-- installed Talvoro version
-- runtime version
-- database version
-- active deployment type
-- important environment settings
-- enabled extensions or integrations
-- current health/status output if available
+| Item | Example |
+| --- | --- |
+| Talvoro version | `0.15.0` |
+| Deployment type | Docker / Web Hosting / custom |
+| Runtime | PHP/runtime version |
+| Database | MySQL/MariaDB version |
+| Important environment values | Non-secret configuration summary |
+| Integrations | Enabled external services/extensions |
+| Health state | Current health/status output where available |
 
-This makes rollback and troubleshooting easier.
+This makes rollback and diagnosis far easier.
 
-## 6. Place the site in a safe upgrade state
+## 6. Put the site into a safe upgrade state
 
-Depending on the release, this may mean:
+Depending on the release, this may involve:
 
-- enabling maintenance mode
-- temporarily stopping write traffic
-- stopping Docker services
-- preventing scheduled jobs from running during migration
+- maintenance mode;
+- stopping new write traffic;
+- pausing scheduled jobs;
+- stopping Docker services.
 
-Follow release-specific instructions.
+Use the target release instructions.
 
 ## 7. Install the new application version
 
 ### Docker
 
-Use the Docker package for the target release.
-
-Typical flow:
+A typical flow may include:
 
 ```bash
 docker compose down
 ```
 
-Replace or update the application files according to the release instructions, then:
+Update the deployment/application files as documented by the release, then:
 
 ```bash
 docker compose up -d --build
 ```
 
-Do not delete persistent volumes during a normal upgrade.
+> [!CAUTION]
+> Do not delete persistent volumes during a normal upgrade.
 
 ### Traditional web hosting
 
-Upload the verified new package.
+Upload the **verified** target package and replace files only according to the release instructions.
 
-Follow the release instructions for replacing application files while preserving:
+Preserve:
 
-- user uploads
-- environment-specific configuration
-- persistent data
+- user uploads;
+- protected configuration;
+- environment-specific secrets;
+- other persistent data.
 
-Do not overwrite secrets with example configuration files.
+Do not overwrite production secrets with example files.
 
-## 8. Run database migrations
+## 8. Run required database migrations
 
 If the release includes migrations, run them exactly as documented.
 
-Migration execution should:
+A migration system should:
 
-- fail clearly on error
-- not silently ignore failed statements
-- preserve a reliable migration history
-- be tested against supported upgrade paths before release
+- fail clearly on error;
+- preserve stable ordering/history;
+- not silently ignore failed statements;
+- be tested against supported upgrade paths.
 
-Do not manually mark a failed migration as successful unless the Talvoro documentation explicitly instructs you to do so.
+Do not manually mark a failed migration successful unless Talvoro documentation explicitly instructs you to do so.
 
-## 9. Run post-upgrade checks
+## 9. Validate the upgraded site
 
 Confirm:
 
-- public site loads
-- administrator login works
-- existing content is present
-- media/uploads load
-- new uploads work
-- settings persist
-- database writes work
-- scheduled tasks work if configured
-- no unexpected migration errors appear
-- application health checks are successful
+- public site loads;
+- administrator sign-in works;
+- existing content is present;
+- existing media loads;
+- new uploads work;
+- settings persist;
+- database writes succeed;
+- scheduled tasks work if configured;
+- health checks are successful;
+- there are no unexplained migration errors.
 
 ## 10. Review logs
-
-Check application and platform logs for new errors.
 
 Docker example:
 
@@ -183,38 +175,52 @@ Docker example:
 docker compose logs --tail=200
 ```
 
+Review application, PHP/runtime, database, proxy, and hosting logs as relevant.
+
 Never publish unsanitized production logs.
 
-## 11. Keep the backup
+## 11. Keep the recovery point
 
-Do not immediately delete the pre-upgrade backup.
+Do not delete the pre-upgrade backup immediately.
 
-Keep it until the upgraded installation has been stable long enough for you to be confident that rollback is no longer required.
+Keep it until the new release has been stable long enough that rollback is no longer part of the expected recovery plan.
 
 ## Rollback
 
 If the upgrade fails:
 
-1. Stop the upgraded application.
-2. Do not continue writing new production data.
-3. Restore the application version compatible with the backup.
-4. Restore the database.
-5. Restore uploads and other persistent data.
-6. Confirm configuration compatibility.
-7. Start the restored version.
-8. Run smoke checks.
-9. Investigate the failed upgrade separately.
+1. stop the upgraded application and new write traffic;
+2. restore the Talvoro version compatible with the backup;
+3. restore the database;
+4. restore uploads and persistent data;
+5. restore compatible configuration/secrets;
+6. start the restored version;
+7. run smoke checks;
+8. investigate the failed upgrade separately.
 
-Do not restore only the database while leaving incompatible application files in place.
+> [!WARNING]
+> Do not restore only the database while leaving an incompatible application version in place.
 
 ## Version skipping
 
-Skipping versions may be supported, but must never be assumed.
+Skipping versions may be supported, but never assume it is safe.
 
-If the target release requires migration steps introduced by intermediate versions, follow the documented supported path.
+If intermediate releases introduced required migration steps, follow the documented supported path.
 
-## Pre-1.0 warning
+## Pre-1.0 rule
 
-Talvoro may introduce breaking upgrade changes before version 1.0.
+Talvoro may introduce breaking upgrade changes before `1.0.0`.
 
-Always read the release notes for every pre-1.0 upgrade.
+For every pre-1.0 upgrade:
+
+```text
+read release notes
+→ verify package
+→ verify backup
+→ follow exact migration path
+→ validate after upgrade
+```
+
+---
+
+[← Documentation home](README.md) · [Troubleshooting →](TROUBLESHOOTING.md)

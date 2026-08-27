@@ -1,10 +1,14 @@
+<div align="center">
+
 # Talvoro Development Guide
 
-This document describes the intended development workflow for Talvoro contributors.
+### A small branch model, predictable releases, and security-conscious changes.
 
-Talvoro uses a simple branch model designed to keep development fast while keeping releases predictable.
+**[Documentation](README.md)** · **[Contributing](../CONTRIBUTING.md)** · **[Release Engineering](RELEASING.md)** · **[Security](../SECURITY.md)**
 
-## Repository
+</div>
+
+---
 
 Official repository:
 
@@ -15,37 +19,43 @@ https://github.com/DrRoglaa/talvoro
 ## Branch model
 
 ```text
-main
-└── stable and released code
-
-dev
-└── integration branch for the next release
-
-feature/*
-fix/*
-docs/*
-└── short-lived working branches
+feature/*   fix/*   docs/*
+       \      |      /
+             dev
+              ↓
+             main
+              ↓
+      signed vX.Y.Z tag
+              ↓
+     automated release workflow
 ```
 
-## `main`
+| Branch | Purpose |
+| --- | --- |
+| `main` | Stable/released source and release candidates promoted from `dev` |
+| `dev` | Integration branch for the next Talvoro release |
+| `feature/*` | Focused feature development |
+| `fix/*` | Focused bug fixes |
+| `docs/*` | Documentation-only work |
 
-`main` represents stable, releasable Talvoro code.
+Normal development targets `dev`. Official version tags are created only from release-ready commits on `main`.
 
-Normal feature development should not happen directly on `main`.
+## Start a change
 
-Official release tags are created from commits on `main`.
+Update `dev`:
 
-## `dev`
+```bash
+git switch dev
+git pull --ff-only origin dev
+```
 
-`dev` is the integration branch for the next Talvoro release.
+Create a focused branch:
 
-Completed feature, fix, and documentation branches are merged into `dev` after review and automated checks.
+```bash
+git switch -c feature/example
+```
 
-## Working branches
-
-Use clear branch names.
-
-Examples:
+Other examples:
 
 ```text
 feature/media-library
@@ -55,75 +65,59 @@ fix/webhosting-permissions
 docs/docker-installation
 ```
 
-Keep branches focused on one logical change.
+Keep one branch focused on one logical change.
 
-## Typical workflow
+## Commit and push
 
-Start from the latest `dev`:
-
-```bash
-git switch dev
-git pull
-```
-
-Create a branch:
-
-```bash
-git switch -c feature/example
-```
-
-Make and test the change.
-
-Commit with a clear message:
+After making and testing the change:
 
 ```bash
 git add .
 git commit -m "Add example feature"
-```
-
-Push:
-
-```bash
 git push -u origin feature/example
 ```
 
-Open a pull request into `dev`.
+Open the pull request into:
 
-## Pull requests
+```text
+dev
+```
 
-A pull request should explain:
+## Pull-request expectations
 
-- what changed
-- why the change is needed
-- how it was tested
-- whether database migrations are included
-- whether deployment or upgrade behavior changes
-- whether documentation needs to change
+A useful pull request explains:
 
-Avoid mixing unrelated refactors and features in the same pull request.
+- what changed;
+- why it is needed;
+- how it was tested;
+- whether database migrations are included;
+- whether installation/deployment behavior changed;
+- whether upgrades are affected;
+- which documentation was updated;
+- any known limitations/follow-up work.
+
+Avoid mixing unrelated refactors with functional changes.
 
 ## Continuous integration
 
-CI should run for relevant pushes and pull requests.
+Relevant pushes and pull requests should be validated automatically.
 
-The intended CI checks include:
+The Talvoro release-check pipeline covers the release-facing path, including:
 
-- application tests
-- installer checks
-- database migration validation
-- packaging validation
-- Docker build validation
-- static or syntax checks
-- regression checks
-- security sanity checks
+- release-packaging regressions;
+- all three distribution builds;
+- archive/checksum verification;
+- Docker/Web Hosting package smoke tests;
+- release-script syntax checks;
+- checks that release validation does not dirty tracked source.
 
-A failing required check should block merge into protected branches.
+Application-specific tests, migration checks, installer tests, and other validation should be added/retained as the codebase evolves.
+
+A failing required check should block merge into a protected branch.
 
 ## Version source
 
-Talvoro should maintain one authoritative application version source.
-
-The intended repository-level file is:
+Talvoro has one authoritative release version:
 
 ```text
 VERSION
@@ -135,104 +129,50 @@ Example:
 0.15.0
 ```
 
-Release automation should verify that the Git tag and application version agree.
-
-Example:
+For an official release:
 
 ```text
 Git tag:  v0.15.0
 VERSION:  0.15.0
 ```
 
-If they differ, the release must fail.
+These must agree exactly.
 
-## Release flow
+`packaging/MINIMUM_UPDATE_VERSION` is compatibility metadata for the updater. It is not a second application-version source.
 
-Normal release flow:
+## Database migrations
 
-```text
-feature/* / fix/* / docs/*
-          ↓
-         dev
-          ↓
-         main
-          ↓
-   signed vX.Y.Z tag
-          ↓
- GitHub Actions release
-```
+Database changes must use Talvoro's migration system.
+
+Migration rules:
+
+- deterministic behavior;
+- stable ordering;
+- clear failure reporting;
+- supported upgrade-path coverage;
+- explicit review/documentation for destructive changes;
+- no normal release process that depends on manual production DB edits.
+
+Do not silently mark a failed migration successful.
 
 ## Release packages
 
-Every official release is intended to generate:
+Every official release builds:
 
 ```text
 talvoro-vX.Y.Z.zip
 talvoro-vX.Y.Z-docker.zip
 talvoro-vX.Y.Z-webhosting.zip
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
 ```
 
-All distributions must be generated from the exact same tagged commit.
+Publication adds one Sigstore bundle per ZIP and one for `SHA256SUMS.txt`.
 
-The signed Git tag is the canonical source reference.
+All distributions must come from the exact same tagged commit.
 
-## Release signing
+## Packaging safety
 
-Official releases are intended to use:
-
-- signed version tags
-- SHA-256 checksums
-- a cryptographically signed checksum manifest
-
-Private signing material must never be committed to the repository.
-
-Release automation must fail rather than silently publish unsigned required artifacts.
-
-## Semantic Versioning
-
-Talvoro follows Semantic Versioning:
-
-```text
-MAJOR.MINOR.PATCH
-```
-
-Examples:
-
-```text
-0.15.0
-0.15.1
-0.16.0
-1.0.0
-```
-
-Pre-release versions may use:
-
-```text
-v0.16.0-alpha.1
-v0.16.0-beta.1
-v0.16.0-rc.1
-```
-
-## Database migrations
-
-Database changes must be handled through Talvoro's migration system.
-
-Migration rules:
-
-- never edit production databases manually as part of a normal release
-- migrations should be deterministic
-- failures must be visible
-- migration ordering must be stable
-- migration tests should cover supported upgrade paths
-- destructive changes require explicit review and documentation
-
-## Packaging
-
-Release ZIPs must exclude development-only or private files.
-
-Examples of content that should normally not ship:
+Release packages should exclude development-only/private state such as:
 
 ```text
 .git/
@@ -249,56 +189,96 @@ user uploads
 Docker volumes
 ```
 
-The web-hosting package should include everything a supported shared-hosting installation needs at runtime, according to the release design.
+The release tooling validates package boundaries and scans for several high-confidence secret/private-key patterns.
+
+> [!NOTE]
+> Release packaging guardrails complement repository secret scanning; they do not replace it.
+
+## Release signing model
+
+Talvoro separates human source authorization from CI artifact signing:
+
+| Layer | Purpose |
+| --- | --- |
+| Maintainer SSH/GPG signature | Proves the official release tag was authorized by a maintainer |
+| Deterministic package build | Produces predictable release bytes from tagged source |
+| SHA-256 manifest | Detects modified distribution archives |
+| Sigstore/Cosign | Keylessly signs each release ZIP and `SHA256SUMS.txt` in GitHub Actions |
+| GitHub attestations | Records build provenance for release assets |
+
+Private signing keys never belong in the repository or normal CI secrets.
+
+See **[GitHub Releases & Verification](GITHUB-RELEASES.md)**.
 
 ## Documentation changes
 
-If a change modifies installation, deployment, upgrade behavior, configuration, or user-visible workflows, update the relevant documentation in the same pull request whenever possible.
+Update documentation in the same pull request when a change affects:
 
-## Security
+- installation;
+- deployment;
+- upgrades;
+- migrations;
+- configuration;
+- user-visible behavior;
+- release packaging;
+- security expectations.
+
+## Security rules
 
 Never commit:
 
-- passwords
-- API tokens
-- private keys
-- production `.env` files
-- database dumps containing real data
-- customer or user data
+- passwords;
+- API tokens;
+- private keys;
+- production `.env` files;
+- real database dumps;
+- private backups;
+- customer/user data.
 
-If a secret is accidentally committed, assume it has been exposed and rotate it.
+If a secret is accidentally committed, assume compromise and rotate/revoke it. Deleting it in a later commit is not enough.
 
-See:
-
-```text
-SECURITY.md
-```
+See **[SECURITY.md](../SECURITY.md)**.
 
 ## Before merging
 
 Confirm:
 
-- tests pass
-- migrations are correct
-- no secrets are present
-- documentation is updated
-- version behavior is unchanged unless intentionally part of the change
-- release packaging still works
-- Docker and web-hosting paths remain supported where applicable
+- relevant tests pass;
+- migrations are correct;
+- no secrets/private data are present;
+- documentation is updated;
+- release packaging still works;
+- Docker and Web Hosting paths remain valid where affected;
+- version behavior changed only when intentional.
 
 ## Before releasing
 
-Confirm:
+The maintainer flow is:
 
-1. `dev` is stable.
-2. release notes are complete.
-3. `VERSION` is correct.
-4. CI passes.
-5. migration checks pass.
-6. `dev` is merged into `main`.
-7. the release tag is signed.
-8. release artifacts are generated from that exact tag.
-9. checksums are generated.
-10. required signatures verify.
-11. smoke tests pass.
-12. only then is the GitHub Release published.
+```text
+dev stable
+  ↓
+local release tests/build/verification
+  ↓
+PR dev → main
+  ↓
+main release checks
+  ↓
+signed annotated vX.Y.Z tag
+  ↓
+tag verification + reproducible build
+  ↓
+package verification + smoke tests
+  ↓
+protected release approval
+  ↓
+Sigstore + provenance
+  ↓
+GitHub Release
+```
+
+For the exact procedure, see **[Release Engineering](RELEASING.md)** and **[GitHub Releases & Verification](GITHUB-RELEASES.md)**.
+
+---
+
+[← Documentation home](README.md)

@@ -1,10 +1,29 @@
+<div align="center">
+
 # Install Talvoro with Docker
 
-This guide describes the recommended Docker-based installation path for Talvoro.
+### The recommended container-based deployment path.
 
-> Talvoro is still in active pre-1.0 development. Review the release notes before installing or upgrading.
+**[Documentation](README.md)** · **[Distributions](DISTRIBUTIONS.md)** · **[Backup & Restore](BACKUP-RESTORE.md)** · **[Troubleshooting](TROUBLESHOOTING.md)**
 
-## Package
+</div>
+
+---
+
+> [!IMPORTANT]
+> Talvoro is in active pre-1.0 development. Review the release notes for the exact version before installing or upgrading.
+
+## Before you begin
+
+| Requirement | Guidance |
+| --- | --- |
+| Docker | Docker Engine with Docker Compose support |
+| Production host | Supported 64-bit Linux host |
+| Storage | Enough space for application data, database, uploads, logs, and backups |
+| Network | Domain name and HTTPS for public deployments |
+| Local development | Docker Desktop on macOS or Windows is suitable |
+
+## 1. Download the Docker release
 
 Download the Docker distribution for the version you want to install:
 
@@ -12,87 +31,75 @@ Download the Docker distribution for the version you want to install:
 talvoro-vX.Y.Z-docker.zip
 ```
 
-Also download:
+For release verification, also download:
 
 ```text
+talvoro-vX.Y.Z-docker.zip.sigstore.json
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
 ```
 
-## 1. Verify the download
+> [!CAUTION]
+> Do not install a package that fails checksum or signature verification.
 
-Verify the SHA-256 checksum before extracting the release.
+## 2. Verify the release
 
-On Linux:
+If you downloaded only the Docker ZIP, verify its SHA-256 entry rather than asking the checksum tool to validate distributions you did not download.
+
+**Linux**
 
 ```bash
-sha256sum -c SHA256SUMS.txt
+grep '  talvoro-vX.Y.Z-docker.zip$' SHA256SUMS.txt | sha256sum -c -
 ```
 
-On macOS:
+**macOS**
 
 ```bash
-shasum -a 256 -c SHA256SUMS.txt
+grep '  talvoro-vX.Y.Z-docker.zip$' SHA256SUMS.txt | shasum -a 256 -c -
 ```
 
-Signature verification instructions will be documented with the Talvoro release-signing setup.
-
-Do not continue if the checksum or signature verification fails.
-
-## 2. Requirements
-
-Recommended host requirements:
-
-- Docker Engine with Docker Compose support
-- A supported 64-bit Linux host for production
-- Sufficient disk space for the application, database, uploads, logs, and backups
-- A domain name for public deployments
-- HTTPS for production
-- Outbound network access if the deployment needs to retrieve container images or updates
-
-For local development, Docker Desktop on macOS or Windows can also be used.
+Then verify the Sigstore bundle and, where desired, GitHub provenance using **[GitHub Releases & Verification](GITHUB-RELEASES.md#verify-an-official-release)**.
 
 ## 3. Extract the package
 
-Example:
-
 ```bash
 unzip talvoro-vX.Y.Z-docker.zip
-cd talvoro-vX.Y.Z-docker
+cd talvoro
 ```
 
-Inspect the included files before starting the stack.
+Inspect the package before starting it.
 
-A release may include files such as:
+The exact package layout can evolve between pre-1.0 releases, but the Docker distribution includes the Talvoro application and supported Docker bootstrap/deployment files for that release.
+
+## 4. Create the Docker environment file
+
+Talvoro ships a Docker bootstrap template:
 
 ```text
-compose.yaml
-Dockerfile
-.env.example
-README.md
-VERSION
+.env.docker.example
 ```
 
-The exact contents may evolve between pre-1.0 releases.
-
-## 4. Create the environment file
-
-If the release contains `.env.example`, copy it:
+Copy it to `.env`:
 
 ```bash
-cp .env.example .env
+cp .env.docker.example .env
 ```
 
-Open `.env` and configure all required values.
+The template currently includes database bootstrap values such as:
 
-Never commit your production `.env` file to Git.
+```text
+DB_DATABASE
+DB_USERNAME
+DB_PASSWORD
+DB_ROOT_PASSWORD
+```
 
-Use strong, unique secrets for:
+Replace placeholder passwords with long, unique values before first start.
 
-- application keys
-- database passwords
-- administrator bootstrap secrets, if applicable
-- mail credentials, if configured
+> [!WARNING]
+> Never commit a production `.env` file. Do not reuse the database root password as the application database-user password.
+
+Application settings and `APP_KEY` are created by the browser installer and stored in Talvoro's protected configuration.
 
 ## 5. Start Talvoro
 
@@ -102,130 +109,121 @@ Build and start the stack:
 docker compose up -d --build
 ```
 
-Check container status:
+Check service state:
 
 ```bash
 docker compose ps
 ```
 
-If a health check is provided, wait until the required services report healthy before continuing.
+If health checks are configured, wait until required services report healthy.
 
-## 6. Review logs
+## 6. Review logs if needed
 
-If Talvoro does not start correctly:
+All services:
 
 ```bash
 docker compose logs --tail=200
 ```
 
-For a specific service:
+One service:
 
 ```bash
 docker compose logs --tail=200 <service-name>
 ```
 
-Do not publish logs publicly without first checking them for secrets, tokens, email addresses, or other private data.
+> [!WARNING]
+> Sanitize logs before sharing them. Logs can contain URLs, email addresses, tokens, paths, or other private information.
 
-## 7. Complete the installer
+## 7. Complete the browser installer
 
-Open the configured Talvoro URL in your browser.
+Open the configured Talvoro URL.
 
-The installer should guide you through the remaining setup, such as:
+The installer performs the remaining setup for the release, which may include:
 
-- database initialization
-- site configuration
-- administrator creation
-- environment checks
+- environment checks;
+- database initialization;
+- site configuration;
+- administrator creation.
 
 The exact installer flow may change before Talvoro 1.0.
 
 ## 8. Configure HTTPS
 
-Production Talvoro installations should use HTTPS.
+Every public production deployment should use HTTPS.
 
-HTTPS may be handled by:
+HTTPS may be terminated by the deployment's supported reverse proxy, Caddy, Nginx, Traefik, or another trusted proxy appropriate for your environment.
 
-- a reverse proxy included with the deployment
-- Caddy
-- Nginx
-- Traefik
-- another trusted reverse proxy
+> [!CAUTION]
+> Do not expose authentication or administrator pages over plain HTTP on a public network.
 
-Do not expose administrative or authentication pages over plain HTTP on a public network.
+## 9. Identify persistent data
 
-## 9. Persistent data
+Treat containers as replaceable. Know exactly where persistent data lives.
 
-Before using Talvoro in production, identify every persistent path or Docker volume used for:
+Protect the storage used for:
 
-- database data
-- uploaded files
-- application-generated persistent files
-- configuration that is not reproducible from the release package
+- database data;
+- uploaded media/files;
+- application-generated persistent data;
+- site-specific configuration that cannot be recreated from the release package.
 
-Back up persistent data separately from the application containers.
+Do not assume a container filesystem is a backup.
 
-Containers themselves should be treated as replaceable.
+## 10. Establish backups before production use
 
-## 10. Backups
+At minimum, protect:
 
-Before every upgrade, create a verified backup.
+| Data | Why it matters |
+| --- | --- |
+| Database | Content, settings, accounts, application state |
+| Uploads | User/site media that cannot be recreated from source |
+| Configuration | Environment-specific values and protected site configuration |
+| Other volumes | Any additional persistent runtime data |
 
-See:
+Follow **[Backup & Restore](BACKUP-RESTORE.md)** and test a restore before relying on a backup strategy.
 
-```text
-docs/BACKUP-RESTORE.md
-```
+## Post-install checklist
 
-At minimum, back up:
+Confirm:
 
-- the database
-- uploaded files
-- site-specific configuration
-- any additional persistent volumes
+- `docker compose ps` shows the expected services;
+- the public site loads;
+- administrator sign-in works;
+- uploads work;
+- database-backed settings persist;
+- HTTPS is active in production;
+- persistent volumes are known and backed up;
+- no database port is unintentionally public.
 
-## 11. Updating Talvoro
+## Updating Talvoro
 
 Do not overwrite a running installation blindly.
 
-Use the release-specific upgrade instructions and:
+Use **[Upgrading Talvoro](UPGRADE.md)** and the release notes for the exact target version.
 
-```text
-docs/UPGRADE.md
-```
+A safe upgrade normally includes:
 
-A normal upgrade flow is expected to include:
+1. verify the new release;
+2. create and test a backup;
+3. place the site in a safe upgrade state;
+4. update the application/deployment files;
+5. run required migrations;
+6. start the updated stack;
+7. run smoke checks;
+8. keep the pre-upgrade backup until the new version is proven stable.
 
-1. Read the release notes.
-2. Create and verify a backup.
-3. Verify the new release.
-4. Stop or place the site in maintenance mode if required.
-5. Replace application code/images.
-6. Run required migrations.
-7. Start the updated stack.
-8. Run smoke checks.
-9. Confirm the site and administrator area work correctly.
+## Uninstalling
 
-## 12. Uninstalling
-
-Before removing Talvoro, export or back up any data you want to keep.
-
-Then stop the stack:
+Back up anything you want to keep, then stop the stack:
 
 ```bash
 docker compose down
 ```
 
-Be careful with destructive options that remove volumes. Removing a database volume may permanently delete site data.
+> [!CAUTION]
+> Destructive volume-removal options can permanently delete database and uploaded data. Do not remove persistent volumes unless you intentionally want to destroy that data.
 
-## Troubleshooting
-
-See:
-
-```text
-docs/TROUBLESHOOTING.md
-```
-
-Useful first checks:
+## First troubleshooting commands
 
 ```bash
 docker compose ps
@@ -233,11 +231,17 @@ docker compose logs --tail=200
 docker compose config
 ```
 
-## Security notes
+For deeper diagnosis, see **[Troubleshooting](TROUBLESHOOTING.md)**.
 
-- Keep Docker and the host OS updated.
-- Do not expose the database service publicly unless there is a specific and secured reason.
-- Use strong secrets.
-- Use HTTPS.
-- Keep backups outside the live Talvoro host when possible.
-- Verify official Talvoro release checksums and signatures.
+## Security baseline
+
+- keep Docker Engine and the host OS supported and updated;
+- use strong unique secrets;
+- use HTTPS;
+- do not expose the database publicly without a specific secured design;
+- protect backups separately from the live host;
+- verify official Talvoro release checksums and signatures before deployment.
+
+---
+
+[← Documentation home](README.md) · [Upgrade guide →](UPGRADE.md)

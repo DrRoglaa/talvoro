@@ -1,32 +1,33 @@
-# Security Policy
+<div align="center">
 
-Security is an important part of Talvoro.
+# Talvoro Security Policy
 
-Talvoro is a self-hosted content management system, so vulnerabilities may affect authentication, content integrity, uploaded files, private configuration, databases, or the systems on which Talvoro is deployed.
+### Report privately. Verify releases. Protect production data.
 
-Please report suspected security vulnerabilities responsibly.
+**[Project README](README.md)** · **[Documentation](docs/README.md)** · **[Release Verification](docs/GITHUB-RELEASES.md)**
+
+</div>
 
 ---
 
-## Supported Versions
+> [!CAUTION]
+> **Do not report suspected security vulnerabilities through a public GitHub issue, discussion, pull request, comment, or public proof-of-concept repository.**
+>
+> Public disclosure before a fix is available may place Talvoro installations at unnecessary risk.
+
+Talvoro is self-hosted software. Security issues can affect authentication, content integrity, uploaded files, protected configuration, databases, backups, or the host on which Talvoro runs.
+
+## Supported versions
 
 Talvoro is currently in active pre-1.0 development.
 
-The exact supported-version policy may evolve before Talvoro 1.0.
-
-Until a formal support matrix is published, security fixes will generally target the latest supported Talvoro release and, where practical, other actively supported release lines.
+Until a formal support matrix is published, security fixes will generally target the latest supported release and, where practical, other actively supported release lines.
 
 Critical security fixes for supported Talvoro versions are intended to remain available to all supported users.
 
----
+## Report a vulnerability
 
-## Reporting a Security Vulnerability
-
-**Do not report suspected security vulnerabilities through a public GitHub issue, discussion, pull request, or other public channel.**
-
-Public disclosure before a fix is available may place Talvoro installations at unnecessary risk.
-
-Instead, use GitHub's private vulnerability reporting feature for this repository when it is available and enabled.
+Use GitHub's **private vulnerability reporting** feature for this repository when it is available and enabled.
 
 Repository:
 
@@ -34,113 +35,117 @@ Repository:
 https://github.com/DrRoglaa/talvoro
 ```
 
-If private vulnerability reporting is not yet enabled, please avoid publishing technical exploit details publicly until a private reporting channel is provided.
+In GitHub, look under the repository **Security** area for the private vulnerability-reporting option.
 
----
+If private reporting is temporarily unavailable, avoid publishing technical exploit details until a private contact path is provided.
 
-## What to Include
+## What to include
 
-A useful vulnerability report should include as much relevant information as possible, such as:
+A useful report includes the minimum information needed to understand and reproduce the issue.
 
-- affected Talvoro version
-- installation type
-  - Source / Standard
-  - Docker
-  - Web Hosting
-- operating system or hosting environment
-- database type and version
-- runtime version
-- vulnerability category
-- affected component
-- steps to reproduce
-- expected behavior
-- actual behavior
-- potential impact
-- whether authentication is required
-- whether administrator privileges are required
-- proof-of-concept details, where appropriate
-- suggested remediation, if known
+| Area | Useful detail |
+| --- | --- |
+| Version | Affected Talvoro version(s) |
+| Distribution | Source / Standard, Docker, or Web Hosting |
+| Environment | OS/hosting provider and runtime version |
+| Database | Type and version |
+| Component | Affected route, feature, parser, installer, API, etc. |
+| Reproduction | Minimal safe steps |
+| Impact | What an attacker could gain/change |
+| Privileges | Whether authentication/admin rights are required |
+| Evidence | Minimal proof of concept, sanitized logs/screenshots |
+| Remediation | Suggested fix, if known |
 
-Please keep proof-of-concept material minimal and focused on demonstrating the vulnerability safely.
+Keep proof-of-concept material narrow and safe.
 
----
+## Do not include unnecessary sensitive data
 
-## Please Do Not Include
+Do not send:
 
-Do not send unnecessary sensitive or personal data.
+- real user passwords;
+- production session tokens;
+- private API keys;
+- private signing keys;
+- complete production database dumps;
+- unrelated customer/user information;
+- raw production `.env` contents.
 
-Examples include:
+Sanitize logs and screenshots before attaching them.
 
-- real user passwords
-- production session tokens
-- private API keys
-- private signing keys
-- complete production database dumps
-- unrelated customer or user information
-- secrets copied from a production `.env` file
+## Good-faith security research
 
-Sanitize logs and screenshots before including them.
+We ask researchers to:
 
----
+- test only systems they own or are explicitly authorized to test;
+- minimize access to data;
+- avoid modifying/deleting user data;
+- avoid disruption of production services;
+- avoid denial-of-service testing against third-party systems;
+- avoid social engineering;
+- stop testing if sensitive data is unexpectedly exposed;
+- coordinate disclosure until users have a reasonable opportunity to update.
 
-## Good-Faith Security Research
+This section describes Talvoro's requested research behavior; it is not permission to test systems you do not control.
 
-We ask security researchers to:
-
-- act in good faith
-- avoid accessing data that is not necessary to demonstrate the issue
-- avoid modifying or deleting user data
-- avoid disrupting production services
-- avoid denial-of-service testing against systems you do not own
-- avoid social engineering
-- avoid publishing vulnerability details before coordinated disclosure
-- stop testing if sensitive user data is unexpectedly exposed
-
-Only test systems you own or systems for which you have explicit authorization.
-
----
-
-## Coordinated Disclosure
+## Coordinated disclosure
 
 For a confirmed vulnerability, the intended process is:
 
-1. Confirm and reproduce the issue.
-2. Assess severity and affected versions.
-3. Develop and test a fix.
-4. Prepare any required migration or mitigation instructions.
-5. Prepare a security advisory.
-6. Publish fixed Talvoro releases.
-7. Publish verification data for the release.
-8. Disclose the vulnerability publicly once users have a reasonable opportunity to update.
+```text
+report privately
+  ↓
+confirm and reproduce
+  ↓
+assess affected versions/severity
+  ↓
+develop + test remediation
+  ↓
+prepare migrations/mitigations if needed
+  ↓
+prepare advisory
+  ↓
+publish fixed signed releases
+  ↓
+allow users reasonable update time
+  ↓
+coordinate public disclosure
+```
 
-Exact timelines may vary depending on severity and complexity.
+Exact timing depends on severity, exploitability, and fix complexity.
 
----
+## Security releases
 
-## Security Releases
+Talvoro's official release trust model includes:
 
-Official Talvoro releases are intended to use:
+- cryptographically verified signed Git version tags;
+- deterministic release packaging from the exact tagged source;
+- SHA-256 package checksums;
+- individual Sigstore signatures for every release ZIP;
+- a Sigstore signature for `SHA256SUMS.txt`;
+- GitHub build provenance attestations;
+- protected release publication.
 
-- signed Git version tags
-- SHA-256 checksums
-- cryptographically signed release verification data
-- reproducible release packaging from the exact tagged source
-
-Typical release artifacts include:
+Expected Talvoro release assets:
 
 ```text
 talvoro-vX.Y.Z.zip
+talvoro-vX.Y.Z.zip.sigstore.json
+
 talvoro-vX.Y.Z-docker.zip
+talvoro-vX.Y.Z-docker.zip.sigstore.json
+
 talvoro-vX.Y.Z-webhosting.zip
+talvoro-vX.Y.Z-webhosting.zip.sigstore.json
+
 SHA256SUMS.txt
-SHA256SUMS.txt.sig
+SHA256SUMS.txt.sigstore.json
 ```
 
-Users should verify release checksums and signatures before installing or upgrading Talvoro.
+Users should verify official releases before installation or upgrade.
 
----
+See **[GitHub Releases & Verification](docs/GITHUB-RELEASES.md)**.
 
-## Release Authenticity
+## Release authenticity
 
 The canonical source for an official Talvoro release is the exact Git commit referenced by its official signed version tag in:
 
@@ -148,134 +153,119 @@ The canonical source for an official Talvoro release is the exact Git commit ref
 https://github.com/DrRoglaa/talvoro
 ```
 
-Release packages should be generated from that same tagged commit.
+All deployment distributions are generated from that same tagged source.
 
-If a release artifact, checksum, signature, version tag, or source reference does not match, do not install the release until the discrepancy has been resolved.
+> [!CAUTION]
+> If the tag, version, checksum, signature, provenance, or release asset set does not match, do not install the release until the discrepancy is resolved.
 
----
-
-## Secrets
+## Repository secrets
 
 The Talvoro repository must never contain:
 
-- production passwords
-- private API tokens
-- database credentials
-- production `.env` files
-- SSH private keys
-- release-signing private keys
-- TLS private keys
-- real production database dumps
-- private user data
+```text
+production passwords
+private API/access tokens
+database credentials
+production .env files
+SSH/TLS private keys
+release-signing private keys
+real production database dumps
+private user/customer data
+private backups
+```
 
-If a secret is accidentally committed, deleting the file from a later commit is not sufficient.
+If a secret is accidentally committed:
 
-Treat the secret as compromised and rotate or revoke it immediately.
+1. treat it as compromised;
+2. rotate or revoke it immediately;
+3. assess any systems that trusted it;
+4. clean repository history where appropriate.
 
-Repository history may also need to be cleaned where appropriate.
+Deleting the secret only in a later commit is not sufficient.
 
----
+## Dependency security
 
-## Dependencies
+Talvoro should keep supported runtime dependencies current and review security advisories that affect supported releases.
 
-Talvoro should keep runtime dependencies current and review security advisories affecting supported releases.
+Security updates should be tested, but should not be delayed merely because they contain no user-visible feature.
 
-Security-related dependency updates should be tested before release and should not be delayed solely because they do not introduce user-visible features.
+## Database security
 
----
+Production deployments should:
 
-## Database Security
+- use a dedicated database user;
+- grant only required permissions;
+- keep database software supported and updated;
+- use strong unique credentials;
+- avoid exposing database ports directly to the public internet;
+- protect database backups as sensitive data.
 
-Production Talvoro deployments should:
+## Web Hosting security
 
-- use a dedicated database user
-- grant only required database permissions
-- avoid exposing the database directly to the public internet
-- use strong credentials
-- keep database software supported and updated
-- protect database backups as sensitive data
+Traditional hosting should prevent public access to:
 
----
+- environment/configuration files;
+- backups;
+- logs;
+- private keys;
+- internal application directories not intended to be public.
 
-## Web Hosting Security
+Use HTTPS in production.
 
-Traditional web-hosting installations should ensure that sensitive application files are not publicly accessible.
+## Docker security
 
-This includes:
+Docker deployments should:
 
-- environment files
-- configuration containing credentials
-- backups
-- logs
-- private keys
-- internal application directories not intended for public access
+- keep Docker Engine and the host OS supported and updated;
+- review published ports;
+- avoid public database exposure;
+- keep secrets outside the repository;
+- avoid unnecessary services;
+- use persistent storage only where intended;
+- verify Talvoro release artifacts before deployment.
 
-Use HTTPS for production installations.
+## Backup security
 
----
-
-## Docker Security
-
-Docker installations should:
-
-- keep Docker Engine and the host operating system updated
-- avoid exposing the database service publicly unless explicitly required and secured
-- use persistent volumes only where required
-- protect secrets outside the repository
-- avoid running unnecessary services
-- review published ports
-- verify release artifacts before deployment
-
----
-
-## Backups
-
-Backups may contain the complete Talvoro database, uploaded files, configuration, and secrets.
-
-Treat backups as sensitive production data.
+Backups may contain a complete copy of the site, including data and secrets.
 
 Backups should be:
 
-- access-controlled
-- stored securely
-- encrypted where appropriate
-- retained according to a defined policy
-- periodically tested through restore procedures
+- access-controlled;
+- stored securely;
+- encrypted where appropriate;
+- retained under a defined policy;
+- periodically tested through restore procedures.
 
-See:
+See **[Backup & Restore](docs/BACKUP-RESTORE.md)**.
 
-```text
-docs/BACKUP-RESTORE.md
-```
+## Security updates
 
----
+Install security updates promptly.
 
-## Security Updates
+A security advisory should explain, where applicable:
 
-Users are strongly encouraged to install security updates promptly.
+- affected versions;
+- fixed versions;
+- severity;
+- required upgrade actions;
+- temporary mitigations.
 
-Security advisories and release notes should explain:
+## Public issues
 
-- affected versions
-- fixed versions
-- severity
-- required upgrade actions
-- temporary mitigations, where applicable
+Public GitHub Issues are appropriate for normal bugs, feature requests, documentation issues, and non-sensitive technical problems.
 
----
+They are **not** appropriate for a vulnerability that could put Talvoro installations or users at risk.
 
-## Public Issues
-
-GitHub Issues are appropriate for normal bugs, feature requests, documentation issues, and non-sensitive problems.
-
-They are **not** appropriate for vulnerabilities that could put Talvoro installations or users at risk.
-
-When in doubt, treat the report as security-sensitive until it has been assessed.
+When unsure, treat a report as security-sensitive until it has been assessed.
 
 ---
 
-## Thank You
+<div align="center">
 
-Responsible vulnerability reports help make Talvoro safer for everyone.
+### Thank you
 
-Thank you for taking the time to report security issues carefully and privately.
+Responsible private reports help keep Talvoro installations safer.
+
+[Documentation](docs/README.md) · [Release Verification](docs/GITHUB-RELEASES.md)
+
+</div>
