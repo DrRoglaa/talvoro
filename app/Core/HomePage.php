@@ -12,54 +12,59 @@ final class HomePage
             'branding.site_name' => '',
             'branding.tagline' => 'Independent publishing',
             'branding.logo_path' => '',
-            'homepage.eyebrow' => 'Care. Craft. Purpose.',
-            'homepage.heading' => 'Build a *beautiful* home for your story.',
-            'homepage.intro' => 'A warm, focused front page that introduces what you do, why it matters and where visitors should go next.',
+            'homepage.eyebrow' => 'Make it yours.',
+            'homepage.heading' => 'Create a *beautiful* place for what matters.',
+            'homepage.intro' => 'Start with a clear message, shape every section around your story, and give visitors an easy path to what matters next.',
             'homepage.primary_enabled' => '1',
             'homepage.primary_label' => 'About us',
             'homepage.primary_url' => '/about',
             'homepage.secondary_enabled' => '1',
-            'homepage.secondary_label' => 'Read the blog',
+            'homepage.secondary_label' => 'Read the journal',
             'homepage.secondary_url' => '/blog',
-            'homepage.hero_image_path' => '',
+            'homepage.hero_image_path' => '/assets/demo/talvoro-home-hero.webp',
             'homepage.values_enabled' => '1',
             'homepage.latest_posts_enabled' => '1',
             'homepage.latest_posts_eyebrow' => 'From the journal',
-            'homepage.latest_posts_heading' => 'Latest news',
-            'homepage.latest_posts_view_label' => 'View all news',
+            'homepage.latest_posts_heading' => 'Latest stories',
+            'homepage.latest_posts_view_label' => 'Read the journal',
             'homepage.latest_posts_count' => '3',
             'homepage.featured_enabled' => '1',
-            'homepage.featured_eyebrow' => 'Featured',
-            'homepage.featured_heading' => 'Meet what matters most.',
-            'homepage.featured_view_label' => 'View all',
+            'homepage.featured_eyebrow' => 'Selected',
+            'homepage.featured_heading' => 'A place for your best work.',
+            'homepage.featured_view_label' => 'Explore more',
             'homepage.featured_view_url' => '/about',
             'homepage.cta_enabled' => '1',
-            'homepage.cta_eyebrow' => 'Why choose us',
-            'homepage.cta_heading' => 'A clear final thought that gives people a reason to continue.',
+            'homepage.cta_eyebrow' => 'Your next step',
+            'homepage.cta_heading' => 'Ready to shape this space around your story?',
             'homepage.cta_button_label' => 'Discover more',
             'homepage.cta_button_url' => '/about',
         ];
 
         $valueDefaults = [
-            1 => ['Thoughtful first', 'Lead with the value or promise that matters most to your visitors.'],
-            2 => ['Made with care', 'Use this space for a second trust point, benefit or principle.'],
-            3 => ['Clear standards', 'Explain the quality, process or standard behind what you do.'],
-            4 => ['Experience', 'Share the knowledge or history that gives visitors confidence.'],
-            5 => ['Ongoing support', 'Finish with the long-term relationship or support you provide.'],
+            1 => ['Clear by design', 'Give every visitor an immediate sense of who you are and why your work matters.'],
+            2 => ['Made to adapt', 'Shape sections, imagery and content around the way you actually communicate.'],
+            3 => ['Thoughtful details', 'Use considered typography, spacing and structure to make every page feel intentional.'],
+            4 => ['Built on trust', 'Set clear expectations and guide people toward the next useful step with confidence.'],
+            5 => ['Ready to grow', 'Start simple, then add stories, services or new ideas without rebuilding everything.'],
         ];
         foreach ($valueDefaults as $i => [$title, $body]) {
             $defaults['homepage.value' . $i . '_title'] = $title;
             $defaults['homepage.value' . $i . '_body'] = $body;
         }
 
-        foreach (range(1, 4) as $i) {
-            $labels = ['First', 'Second', 'Third', 'Fourth'];
+        $featuredDefaults = [
+            1 => ['Latest story', 'Journal', '/blog', '/assets/demo/talvoro-featured-1.webp', 'Open notebook and coffee on a warm desk'],
+            2 => ['Featured project', 'Selected', '/about', '/assets/demo/talvoro-featured-2.webp', 'Modern home surrounded by trees and mountains'],
+            3 => ['What we offer', 'Services', '/about', '/assets/demo/talvoro-featured-3.webp', 'Warm workspace with a laptop, plant and coffee'],
+            4 => ['Our story', 'About', '/about', '/assets/demo/talvoro-featured-4.webp', 'Minimal interior with framed art and a ceramic vase'],
+        ];
+        foreach ($featuredDefaults as $i => [$title, $meta, $url, $imagePath, $imageAlt]) {
             $defaults['homepage.featured_card' . $i . '_enabled'] = '1';
-            $defaults['homepage.featured_card' . $i . '_title'] = $labels[$i - 1] . ' highlight';
-            $defaults['homepage.featured_card' . $i . '_meta'] = 'Featured';
-            $defaults['homepage.featured_card' . $i . '_url'] = '/about';
-            $defaults['homepage.featured_card' . $i . '_image_path'] = '';
-            $defaults['homepage.featured_card' . $i . '_image_alt'] = '';
+            $defaults['homepage.featured_card' . $i . '_title'] = $title;
+            $defaults['homepage.featured_card' . $i . '_meta'] = $meta;
+            $defaults['homepage.featured_card' . $i . '_url'] = $url;
+            $defaults['homepage.featured_card' . $i . '_image_path'] = $imagePath;
+            $defaults['homepage.featured_card' . $i . '_image_alt'] = $imageAlt;
         }
 
         return $defaults;
@@ -252,7 +257,8 @@ final class HomePage
     public static function safeStoredAssetPath(string $value): string
     {
         $value = trim($value);
-        return preg_match('#^/uploads/site/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$#D', $value) === 1 ? $value : '';
+        if (preg_match('#^/uploads/site/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$#D', $value) === 1) return $value;
+        return preg_match('#^/assets/demo/talvoro-(?:home-hero|featured-[1-4])\.webp$#D', $value) === 1 ? $value : '';
     }
 
     public static function accentHeadingHtml(string $value): string

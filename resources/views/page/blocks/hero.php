@@ -16,6 +16,6 @@ $image = HomePage::safeStoredAssetPath((string)($block['image_path'] ?? ''));
         <?php endif; ?>
     </div>
     <figure class="spottina-home-hero-media<?= $image === '' ? ' is-placeholder' : '' ?>">
-        <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($block['image_alt'] ?? '') ?>" loading="<?= (($page['path'] ?? '') === '/') ? 'eager' : 'lazy' ?>" decoding="async"><?php else: ?><span>Add a hero image in the page editor</span><?php endif; ?>
+        <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($block['image_alt'] ?? '') ?>" loading="<?= (($page['path'] ?? '') === '/') ? 'eager' : 'lazy' ?>" decoding="async"><?php else: ?><span class="home-media-placeholder-copy"><small>Hero image</small><strong>Make this space yours</strong><em>Add an image in the page editor</em></span><?php endif; ?>
     </figure>
 </section>

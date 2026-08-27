@@ -164,8 +164,8 @@ final class DesignSystem
   --talvoro-h1:{$scale['h1']};--talvoro-h2:{$scale['h2']};--talvoro-h3:{$scale['h3']};
 }
 body.public-body{background:var(--talvoro-bg);color:var(--talvoro-text);font-family:var(--talvoro-font-body);}
-body.public-body h1,body.public-body h2,body.public-body h3,body.public-body h4{font-family:var(--talvoro-font-heading);color:inherit;}
-body.public-body h1{font-size:var(--talvoro-h1);}body.public-body h2{font-size:var(--talvoro-h2);}body.public-body h3{font-size:var(--talvoro-h3);}
+:where(body.public-body h1,body.public-body h2,body.public-body h3,body.public-body h4){font-family:var(--talvoro-font-heading);color:inherit;}
+:where(body.public-body h1){font-size:var(--talvoro-h1);}:where(body.public-body h2){font-size:var(--talvoro-h2);}:where(body.public-body h3){font-size:var(--talvoro-h3);}
 body.public-body .public-main a:not(.home-pill){color:var(--talvoro-accent);text-decoration:{$linkDecoration};text-decoration-thickness:.08em;text-underline-offset:.16em;}
 body.public-body .home-pill,body.public-body .button{border-radius:var(--talvoro-button-radius);}
 body.public-body .home-pill.primary{background:var(--talvoro-brand);border-color:var(--talvoro-brand);color:{$brandText};}

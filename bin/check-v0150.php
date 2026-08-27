@@ -9,6 +9,7 @@ if (!function_exists('mb_strtolower')) { function mb_strtolower(string $value, ?
 
 use CMS\Core\Database;
 use CMS\Core\DesignSystem;
+use CMS\Core\HomePage;
 use CMS\Core\PageBlocks;
 
 require __DIR__ . '/../bootstrap/app.php';
@@ -55,6 +56,13 @@ try {
     $css = DesignSystem::css();
     $assert('Design CSS emits semantic variables', str_contains($css, '--talvoro-brand:') && str_contains($css, '--talvoro-content-width:') && str_contains($css, '.talvoro-tone-accent'));
     $assert('Design CSS supports visual-preview attributes', str_contains($css, '[data-style-tone="soft"]') && str_contains($css, '[data-style-variant="centered"]'));
+    $assert('Design typography yields to component sizing', str_contains($css, ':where(body.public-body h2)') && !str_contains($css, 'body.public-body h2{font-size:'));
+    $demoBlocks = PageBlocks::legacyHome(HomePage::defaults());
+    $demoHeroStyle = PageBlocks::sectionStyle($demoBlocks[0] ?? []);
+    $demoValuesStyle = PageBlocks::sectionStyle($demoBlocks[1] ?? []);
+    $assert('Default Home demo uses wide semantic sections', ($demoHeroStyle['style_width'] ?? '') === 'wide' && ($demoValuesStyle['style_width'] ?? '') === 'wide');
+    $publicCss = (string)file_get_contents(base_path('public/assets/css/app.css'));
+    $assert('Default Home values use collision-safe cards', str_contains($publicCss, 'Talvoro 0.15.x — polished default homepage.') && str_contains($publicCss, 'grid-template-columns: repeat(6, minmax(0,1fr))'));
 
     $routes = (string)file_get_contents(base_path('routes/web.php'));
     $controller = (string)file_get_contents(base_path('app/Http/DesignController.php'));

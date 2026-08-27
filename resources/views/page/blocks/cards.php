@@ -16,7 +16,7 @@
         ?>
             <a class="home-featured-card tone-<?= (($index % 4) + 1) ?>" href="<?= e($url) ?>">
                 <figure class="home-featured-media<?= $image === '' ? ' is-placeholder' : '' ?>">
-                    <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($item['image_alt'] ?? '') ?>" loading="lazy" decoding="async"><?php else: ?><span>Image <?= (int)$index + 1 ?></span><?php endif; ?>
+                    <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($item['image_alt'] ?? '') ?>" loading="lazy" decoding="async"><?php else: ?><span class="home-card-placeholder-copy"><strong><?= e(str_pad((string)((int)$index + 1), 2, '0', STR_PAD_LEFT)) ?></strong><small>Add image</small></span><?php endif; ?>
                 </figure>
                 <div class="home-featured-caption"><strong><?= e($item['title'] ?? '') ?></strong><span><?= e($item['meta'] ?? '') ?></span></div>
             </a>
