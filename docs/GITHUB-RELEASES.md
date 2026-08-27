@@ -16,7 +16,7 @@ main
   -> archive + checksum verification
   -> Docker/Web Hosting package smoke tests
   -> SHA256SUMS.txt
-  -> keyless Sigstore signature bundle
+  -> keyless Sigstore signature bundle for each ZIP and SHA256SUMS.txt
   -> GitHub artifact provenance attestations
   -> complete draft GitHub Release
   -> published/immutable GitHub Release
@@ -38,7 +38,7 @@ Runs only for `v*.*.*` tags. The repository scripts enforce the stricter `vX.Y.Z
 
 The build job is read-only. It verifies that the tag is annotated, points to the checked-out commit, is reachable from `origin/main`, and is reported by GitHub as cryptographically verified.
 
-The publish job uses the protected `release` environment and receives only the permissions needed to publish, request an OIDC token, and write artifact attestations. It downloads the already-verified artifacts, verifies them again, signs `SHA256SUMS.txt` keylessly with Cosign, generates GitHub provenance attestations, creates/reuses a draft release, uploads the exact expected asset set, validates that asset set, and only then publishes the release.
+The publish job uses the protected `release` environment and receives only the permissions needed to publish, request an OIDC token, and write artifact attestations. It downloads the already-verified artifacts, verifies them again, keylessly signs each of the three release ZIPs plus `SHA256SUMS.txt` with Cosign, immediately verifies every signature against the expected GitHub Actions OIDC identity, generates GitHub provenance attestations, creates/reuses a draft release, uploads the exact expected asset set, validates that asset set, and only then publishes the release.
 
 ## One-time GitHub setup
 
@@ -146,8 +146,11 @@ A successful release contains exactly these uploaded assets:
 
 ```text
 talvoro-vX.Y.Z.zip
+talvoro-vX.Y.Z.zip.sigstore.json
 talvoro-vX.Y.Z-docker.zip
+talvoro-vX.Y.Z-docker.zip.sigstore.json
 talvoro-vX.Y.Z-webhosting.zip
+talvoro-vX.Y.Z-webhosting.zip.sigstore.json
 SHA256SUMS.txt
 SHA256SUMS.txt.sigstore.json
 ```
@@ -170,18 +173,28 @@ macOS:
 shasum -a 256 -c SHA256SUMS.txt
 ```
 
-### Sigstore signature on the checksum manifest
+### Sigstore signatures
 
-For `v0.15.0` in the official repository:
+Every Talvoro deployment ZIP and the checksum manifest has its own Sigstore bundle. For `v0.15.0` in the official repository:
 
 ```bash
-cosign verify-blob SHA256SUMS.txt \
-  --bundle SHA256SUMS.txt.sigstore.json \
-  --certificate-identity 'https://github.com/DrRoglaa/talvoro/.github/workflows/release.yml@refs/tags/v0.15.0' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
+IDENTITY='https://github.com/DrRoglaa/talvoro/.github/workflows/release.yml@refs/tags/v0.15.0'
+ISSUER='https://token.actions.githubusercontent.com'
+
+for artifact in \
+  talvoro-v0.15.0.zip \
+  talvoro-v0.15.0-docker.zip \
+  talvoro-v0.15.0-webhosting.zip \
+  SHA256SUMS.txt
+do
+  cosign verify-blob "$artifact" \
+    --bundle "$artifact.sigstore.json" \
+    --certificate-identity "$IDENTITY" \
+    --certificate-oidc-issuer "$ISSUER"
+done
 ```
 
-The signature bundle signs the checksum manifest itself, so it is intentionally not listed inside `SHA256SUMS.txt` (doing that would create a circular dependency).
+Each bundle contains the signature, short-lived signing certificate, timestamp, and transparency-log proof. The signature bundles are intentionally not listed inside `SHA256SUMS.txt`; including them would create a circular dependency.
 
 ### GitHub build provenance
 
@@ -204,7 +217,7 @@ A release is not published if any required gate fails, including:
 - deterministic package build/verification failure;
 - Docker or Web Hosting smoke-test failure;
 - checksum failure;
-- Sigstore signing or immediate signature verification failure;
+- Sigstore signing or immediate verification failure for any release ZIP or `SHA256SUMS.txt`;
 - GitHub provenance attestation failure;
 - incomplete or unexpected GitHub Release asset set.
 

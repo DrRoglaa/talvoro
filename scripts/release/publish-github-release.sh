@@ -16,12 +16,20 @@ version="$(read_version)"
 tag="v$version"
 [ "$GITHUB_REF_NAME" = "$tag" ] || release_die "Release tag '$GITHUB_REF_NAME' does not match VERSION '$version'."
 
+source_archive="$RELEASE_OUTPUT_DIR/$(archive_name_for source "$version")"
+docker_archive="$RELEASE_OUTPUT_DIR/$(archive_name_for docker "$version")"
+webhosting_archive="$RELEASE_OUTPUT_DIR/$(archive_name_for webhosting "$version")"
+checksum_file="$RELEASE_OUTPUT_DIR/SHA256SUMS.txt"
+
 assets=(
-  "$RELEASE_OUTPUT_DIR/$(archive_name_for source "$version")"
-  "$RELEASE_OUTPUT_DIR/$(archive_name_for docker "$version")"
-  "$RELEASE_OUTPUT_DIR/$(archive_name_for webhosting "$version")"
-  "$RELEASE_OUTPUT_DIR/SHA256SUMS.txt"
-  "$RELEASE_OUTPUT_DIR/SHA256SUMS.txt.sigstore.json"
+  "$source_archive"
+  "$source_archive.sigstore.json"
+  "$docker_archive"
+  "$docker_archive.sigstore.json"
+  "$webhosting_archive"
+  "$webhosting_archive.sigstore.json"
+  "$checksum_file"
+  "$checksum_file.sigstore.json"
 )
 for asset in "${assets[@]}"; do
   [ -s "$asset" ] || release_die "Required release asset is missing or empty: $asset"
@@ -59,8 +67,11 @@ gh release upload "$tag" "${assets[@]}" \
 
 printf '%s\n' \
   "$(archive_name_for source "$version")" \
+  "$(archive_name_for source "$version").sigstore.json" \
   "$(archive_name_for docker "$version")" \
+  "$(archive_name_for docker "$version").sigstore.json" \
   "$(archive_name_for webhosting "$version")" \
+  "$(archive_name_for webhosting "$version").sigstore.json" \
   'SHA256SUMS.txt' \
   'SHA256SUMS.txt.sigstore.json' | LC_ALL=C sort > "$expected_names"
 
