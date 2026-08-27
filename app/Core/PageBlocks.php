@@ -347,10 +347,14 @@ final class PageBlocks
             'secondary_label' => (string)($home['homepage.secondary_label'] ?? ''),
             'secondary_url' => (string)($home['homepage.secondary_url'] ?? '/'),
             'image_path' => HomePage::safeStoredAssetPath((string)($home['homepage.hero_image_path'] ?? '')),
-            'image_alt' => '',
+            'image_alt' => HomePage::safeStoredAssetPath((string)($home['homepage.hero_image_path'] ?? '')) === '/assets/demo/talvoro-home-hero.webp'
+                ? 'Warm workspace with a notebook, coffee and leafy branches'
+                : '',
+            'style_tone' => 'default', 'style_width' => 'wide', 'style_spacing' => 'compact',
+            'style_alignment' => 'left', 'style_variant' => 'default',
         ];
         if (($home['homepage.values_enabled'] ?? '0') === '1') {
-            $icons = ['heart','home','award','clock','heart'];
+            $icons = ['sparkles','home','award','shield','support'];
             $items = [];
             for ($i = 1; $i <= 5; $i++) {
                 $items[] = [
@@ -359,7 +363,11 @@ final class PageBlocks
                     'body' => (string)($home['homepage.value' . $i . '_body'] ?? ''),
                 ];
             }
-            $blocks[] = ['id' => 'legacyvalues01', 'enabled' => true, 'type' => 'values', 'items' => $items];
+            $blocks[] = [
+                'id' => 'legacyvalues01', 'enabled' => true, 'type' => 'values', 'items' => $items,
+                'style_tone' => 'default', 'style_width' => 'wide', 'style_spacing' => 'compact',
+                'style_alignment' => 'left', 'style_variant' => 'default',
+            ];
         }
         if (($home['homepage.featured_enabled'] ?? '0') === '1') {
             $items = [];
@@ -381,6 +389,8 @@ final class PageBlocks
                 'view_label' => (string)($home['homepage.featured_view_label'] ?? ''),
                 'view_url' => (string)($home['homepage.featured_view_url'] ?? ''),
                 'items' => $items,
+                'style_tone' => 'default', 'style_width' => 'wide', 'style_spacing' => 'normal',
+                'style_alignment' => 'left', 'style_variant' => 'default',
             ];
         }
         if (($home['homepage.latest_posts_enabled'] ?? '0') === '1') {
@@ -390,6 +400,8 @@ final class PageBlocks
                 'heading' => (string)($home['homepage.latest_posts_heading'] ?? 'Latest news'),
                 'view_label' => (string)($home['homepage.latest_posts_view_label'] ?? 'View all news'),
                 'count' => max(1, min(6, (int)($home['homepage.latest_posts_count'] ?? 3))),
+                'style_tone' => 'default', 'style_width' => 'wide', 'style_spacing' => 'normal',
+                'style_alignment' => 'left', 'style_variant' => 'default',
             ];
         }
         if (($home['homepage.cta_enabled'] ?? '0') === '1') {
@@ -399,6 +411,8 @@ final class PageBlocks
                 'heading' => (string)($home['homepage.cta_heading'] ?? ''),
                 'button_label' => (string)($home['homepage.cta_button_label'] ?? ''),
                 'button_url' => (string)($home['homepage.cta_button_url'] ?? ''),
+                'style_tone' => 'soft', 'style_width' => 'wide', 'style_spacing' => 'normal',
+                'style_alignment' => 'left', 'style_variant' => 'default',
             ];
         }
         return $blocks;
@@ -407,11 +421,14 @@ final class PageBlocks
     /** @return array{style_tone:string,style_width:string,style_spacing:string,style_alignment:string,style_variant:string} */
     public static function sectionStyle(array $raw): array
     {
-        $tone = in_array((string)($raw['style_tone'] ?? ''), ['default','soft','accent','dark'], true) ? (string)$raw['style_tone'] : 'default';
-        $width = in_array((string)($raw['style_width'] ?? ''), ['normal','wide','full'], true) ? (string)$raw['style_width'] : 'normal';
-        $spacing = in_array((string)($raw['style_spacing'] ?? ''), ['compact','normal','spacious'], true) ? (string)$raw['style_spacing'] : 'normal';
-        $alignment = in_array((string)($raw['style_alignment'] ?? ''), ['left','center'], true) ? (string)$raw['style_alignment'] : 'left';
         $type = (string)($raw['type'] ?? '');
+        $isLegacyHome = str_starts_with((string)($raw['id'] ?? ''), 'legacy');
+        $defaultWidth = $isLegacyHome ? 'wide' : 'normal';
+        $defaultSpacing = $isLegacyHome && in_array($type, ['hero','values'], true) ? 'compact' : 'normal';
+        $tone = in_array((string)($raw['style_tone'] ?? ''), ['default','soft','accent','dark'], true) ? (string)$raw['style_tone'] : 'default';
+        $width = in_array((string)($raw['style_width'] ?? ''), ['normal','wide','full'], true) ? (string)$raw['style_width'] : $defaultWidth;
+        $spacing = in_array((string)($raw['style_spacing'] ?? ''), ['compact','normal','spacious'], true) ? (string)$raw['style_spacing'] : $defaultSpacing;
+        $alignment = in_array((string)($raw['style_alignment'] ?? ''), ['left','center'], true) ? (string)$raw['style_alignment'] : 'left';
         $variants = self::variants($type);
         $variant = (string)($raw['style_variant'] ?? 'default');
         if (!isset($variants[$variant])) $variant = 'default';
