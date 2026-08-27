@@ -90,7 +90,7 @@ try {
 $failed = array_keys(array_filter($checks, static fn(bool $ok): bool => !$ok));
 foreach ($checks as $name => $ok) echo ($ok ? '[OK]   ' : '[FAIL] ') . $name . PHP_EOL;
 if ($failed) {
-    fwrite(STDERR, PHP_EOL . 'v0.15.0 checks failed: ' . implode(', ', $failed) . PHP_EOL);
+    fwrite(STDERR, PHP_EOL . '[CURRENT] Talvoro v0.15.0 Design System & Visual Editing checks failed: ' . implode(', ', $failed) . PHP_EOL);
     exit(1);
 }
-echo PHP_EOL . 'Talvoro v0.15.0 Design System and Visual Editing checks passed.' . PHP_EOL;
+echo PHP_EOL . '[CURRENT] Talvoro v0.15.0 Design System & Visual Editing checks passed.' . PHP_EOL;

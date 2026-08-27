@@ -112,7 +112,7 @@ try {
 $failed = array_keys(array_filter($checks, static fn(bool $ok): bool => !$ok));
 foreach ($checks as $name => $ok) echo ($ok ? '[OK]   ' : '[FAIL] ') . $name . PHP_EOL;
 if ($failed) {
-    fwrite(STDERR, PHP_EOL . 'v0.14.7 checks failed: ' . implode(', ', $failed) . PHP_EOL);
+    fwrite(STDERR, PHP_EOL . '[REGRESSION] Deployment & installer compatibility checks (introduced in v0.14.7) failed: ' . implode(', ', $failed) . PHP_EOL);
     exit(1);
 }
-echo PHP_EOL . 'Talvoro v0.14.7 deployment and installer checks passed.' . PHP_EOL;
+echo PHP_EOL . '[REGRESSION] Deployment & installer compatibility checks (introduced in v0.14.7) passed.' . PHP_EOL;

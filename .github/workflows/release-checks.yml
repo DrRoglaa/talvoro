@@ -1,0 +1,83 @@
+name: Release checks
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-checks:
+    name: Build and verify distributions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/release/*.sh; do
+            bash -n "$script"
+          done
+          PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/release/release_utils.py
+
+      - name: Run release-packaging regression suite
+        shell: bash
+        run: ./scripts/release/test-release.sh
+
+      - name: Build all release distributions
+        shell: bash
+        run: ./scripts/release/build-release.sh
+
+      - name: Verify release distributions and checksums
+        shell: bash
+        run: ./scripts/release/verify-release.sh
+
+      - name: Smoke-test Docker and Web Hosting packages
+        shell: bash
+        run: ./scripts/release/smoke-release-packages.sh
+
+      - name: Confirm checks did not dirty tracked source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git status --short
+            echo 'Release checks modified tracked repository files.' >&2
+            exit 1
+          fi
+
+      - name: Notify brrr on failed branch check
+        if: ${{ failure() && github.event_name == 'push' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          BRRR_WEBHOOK_SECRET: ${{ secrets.BRRR_WEBHOOK_SECRET }}
+          BRRR_WEBHOOK_URL: ${{ secrets.BRRR_WEBHOOK_URL }}
+        run: |
+          if [ -x ./scripts/release/notify-brrr.sh ]; then
+            ./scripts/release/notify-brrr.sh \
+              'Talvoro release checks failed' \
+              "${GITHUB_REF_NAME} failed release validation." \
+              "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+              'active'
+          fi
