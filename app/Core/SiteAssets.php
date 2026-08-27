@@ -70,7 +70,9 @@ final class SiteAssets
     {
         if (!in_array($kind, self::KINDS, true) || $kind === 'media') throw new RuntimeException('Unsupported image asset type.');
         $safe = HomePage::safeStoredAssetPath($publicPath);
-        if ($safe === '' || !str_starts_with($safe, '/uploads/site/')) throw new RuntimeException('Selected media path is invalid.');
+        $isUpload = str_starts_with($safe, '/uploads/site/');
+        $isBundledDemo = str_starts_with($safe, '/assets/demo/');
+        if ($safe === '' || (!$isUpload && !$isBundledDemo)) throw new RuntimeException('Selected media path is invalid.');
         $source = base_path('public' . $safe);
         if (!is_file($source)) throw new RuntimeException('Selected media file is missing.');
 
