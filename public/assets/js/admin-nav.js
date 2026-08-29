@@ -7,6 +7,8 @@
   const scrollPane = nav.querySelector('.cms-sidebar-nav');
   const closeButtons = document.querySelectorAll('[data-admin-nav-close]');
   const storageKey = 'talvoro.admin.sidebar.scroll.v1';
+  const mobileNav = matchMedia('(max-width: 980px)');
+  let lastFocusedBeforeOpen = null;
 
   const readScroll = () => {
     try {
@@ -44,10 +46,28 @@
   }
 
   const setOpen = (open) => {
+    if (open) lastFocusedBeforeOpen = document.activeElement;
+
     shell.classList.toggle('nav-open', open);
+    shell.dataset.navState = open ? 'open' : 'closed';
     document.body.classList.toggle('admin-nav-open', open);
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) requestAnimationFrame(revealActiveInsidePane);
+
+    if (mobileNav.matches) {
+      nav.setAttribute('aria-hidden', open ? 'false' : 'true');
+    } else {
+      nav.removeAttribute('aria-hidden');
+    }
+
+    if (open) {
+      requestAnimationFrame(() => {
+        revealActiveInsidePane();
+        const firstTarget = nav.querySelector('.cms-nav-link.is-active, a, button');
+        firstTarget?.focus();
+      });
+    } else if (lastFocusedBeforeOpen instanceof HTMLElement) {
+      lastFocusedBeforeOpen.focus();
+    }
   };
 
   toggle.addEventListener('click', () => setOpen(!shell.classList.contains('nav-open')));
@@ -56,10 +76,34 @@
     if (event.target.closest('a') && matchMedia('(max-width: 980px)').matches) setOpen(false);
   });
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab' && shell.classList.contains('nav-open') && mobileNav.matches) {
+      const focusable = [...nav.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.hasAttribute('hidden'));
+      if (focusable.length) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    }
     if (event.key === 'Escape' && shell.classList.contains('nav-open')) {
       setOpen(false);
-      toggle.focus();
     }
   });
-  matchMedia('(min-width: 981px)').addEventListener?.('change', (event) => { if (event.matches) setOpen(false); });
+
+  const syncViewportState = () => {
+    if (mobileNav.matches) nav.setAttribute('aria-hidden', shell.classList.contains('nav-open') ? 'false' : 'true');
+    else nav.removeAttribute('aria-hidden');
+  };
+
+  syncViewportState();
+  mobileNav.addEventListener?.('change', (event) => {
+    if (!event.matches) setOpen(false);
+    syncViewportState();
+  });
 })();

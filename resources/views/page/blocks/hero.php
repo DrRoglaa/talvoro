@@ -6,7 +6,7 @@ $image = HomePage::safeStoredAssetPath((string)($block['image_path'] ?? ''));
 <section class="<?= e(PageBlocks::sectionClasses($block, 'spottina-home-hero page-builder-hero' . ($image !== '' ? ' has-media' : ''))) ?>">
     <div class="spottina-home-hero-copy">
         <?php if (trim((string)($block['eyebrow'] ?? '')) !== ''): ?><p class="home-kicker">♡ <?= e($block['eyebrow']) ?></p><?php endif; ?>
-        <?php if (($page['path'] ?? '') === '/'): ?><h1 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h1><?php else: ?><h2 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h2><?php endif; ?>
+        <?php if (($page['path'] ?? '') === '/' || !empty($page['_leading_hero'])): ?><h1 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h1><?php else: ?><h2 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h2><?php endif; ?>
         <?php if (trim((string)($block['intro'] ?? '')) !== ''): ?><p class="home-hero-intro"><?= e($block['intro']) ?></p><?php endif; ?>
         <?php if (!empty($block['primary_enabled']) || !empty($block['secondary_enabled'])): ?>
             <div class="home-hero-actions">

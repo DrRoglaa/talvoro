@@ -14,15 +14,16 @@ final class DesignSystem
     public static function definitions(): array
     {
         return [
-            'brand' => ['label' => 'Brand', 'type' => 'color', 'default' => '#d66f5b'],
-            'accent' => ['label' => 'Accent', 'type' => 'color', 'default' => '#b75544'],
-            'background' => ['label' => 'Page background', 'type' => 'color', 'default' => '#fffaf5'],
-            'surface' => ['label' => 'Surface', 'type' => 'color', 'default' => '#ffffff'],
-            'text' => ['label' => 'Text', 'type' => 'color', 'default' => '#2f2926'],
-            'muted' => ['label' => 'Muted text', 'type' => 'color', 'default' => '#766b65'],
-            'border' => ['label' => 'Border', 'type' => 'color', 'default' => '#e8ddd5'],
-            'heading_font' => ['label' => 'Heading font', 'type' => 'choice', 'default' => 'editorial', 'options' => self::fontPresets()],
-            'body_font' => ['label' => 'Body font', 'type' => 'choice', 'default' => 'humanist', 'options' => self::fontPresets()],
+            'brand' => ['label' => 'Primary accent', 'type' => 'color', 'default' => '#ff6b52'],
+            'accent' => ['label' => 'Sea glass accent', 'type' => 'color', 'default' => '#3bcfc8'],
+            'depth' => ['label' => 'Depth accent', 'type' => 'color', 'default' => '#8d7af0'],
+            'background' => ['label' => 'Page background', 'type' => 'color', 'default' => '#faf7f3'],
+            'surface' => ['label' => 'Surface', 'type' => 'color', 'default' => '#fffdfa'],
+            'text' => ['label' => 'Text', 'type' => 'color', 'default' => '#26221f'],
+            'muted' => ['label' => 'Muted text', 'type' => 'color', 'default' => '#8d837c'],
+            'border' => ['label' => 'Border', 'type' => 'color', 'default' => '#eae6e2'],
+            'heading_font' => ['label' => 'Heading font', 'type' => 'choice', 'default' => 'system', 'options' => self::fontPresets()],
+            'body_font' => ['label' => 'Body font', 'type' => 'choice', 'default' => 'system', 'options' => self::fontPresets()],
             'type_scale' => ['label' => 'Typography scale', 'type' => 'choice', 'default' => 'balanced', 'options' => ['compact' => 'Compact', 'balanced' => 'Balanced', 'expressive' => 'Expressive']],
             'content_width' => ['label' => 'Content width', 'type' => 'integer', 'default' => '760', 'min' => 600, 'max' => 1040],
             'wide_width' => ['label' => 'Wide content width', 'type' => 'integer', 'default' => '1240', 'min' => 900, 'max' => 1600],
@@ -124,10 +125,16 @@ final class DesignSystem
         $pairs = [
             ['text', 'background', 'Main text against page background'],
             ['text', 'surface', 'Main text against cards and surfaces'],
+            ['muted', 'background', 'Muted text against page background'],
+            ['muted', 'surface', 'Muted text against cards and surfaces'],
         ];
         foreach ($pairs as [$foreground, $background, $label]) {
             $ratio = self::contrastRatio($values[$foreground], $values[$background]);
             if ($ratio < 4.5) $warnings[] = $label . ' has low contrast (' . number_format($ratio, 2) . ':1). Aim for at least 4.5:1 for normal text.';
+        }
+        $brandWhite = self::contrastRatio('#ffffff', $values['brand']);
+        if ($brandWhite < 4.5) {
+            $warnings[] = 'Primary accent with white action text has low contrast (' . number_format($brandWhite, 2) . ':1). Choose a darker primary accent or use a different action treatment.';
         }
         return $warnings;
     }
@@ -136,8 +143,8 @@ final class DesignSystem
     {
         $v = self::values();
         $fonts = self::fontStacks();
-        $headingFont = $fonts[$v['heading_font']] ?? $fonts['editorial'];
-        $bodyFont = $fonts[$v['body_font']] ?? $fonts['humanist'];
+        $headingFont = $fonts[$v['heading_font']] ?? $fonts['system'];
+        $bodyFont = $fonts[$v['body_font']] ?? $fonts['system'];
         $scale = match ($v['type_scale']) {
             'compact' => ['h1' => 'clamp(2.15rem,5vw,4.35rem)', 'h2' => 'clamp(1.65rem,3.5vw,2.85rem)', 'h3' => 'clamp(1.2rem,2vw,1.55rem)'],
             'expressive' => ['h1' => 'clamp(3rem,8vw,7rem)', 'h2' => 'clamp(2.15rem,5vw,4.3rem)', 'h3' => 'clamp(1.35rem,2.5vw,1.85rem)'],
@@ -146,7 +153,7 @@ final class DesignSystem
         $spacing = ['compact' => 'clamp(1.5rem,3vw,2.5rem)', 'normal' => 'clamp(2.5rem,5vw,4.75rem)', 'spacious' => 'clamp(4rem,8vw,7.5rem)'];
         $radius = ['small' => '10px', 'medium' => '22px', 'large' => '36px'];
         $button = ['small' => '10px', 'medium' => '18px', 'pill' => '999px'];
-        $shadow = ['none' => 'none', 'soft' => '0 18px 50px rgba(47,41,38,.08)', 'strong' => '0 24px 70px rgba(47,41,38,.16)'];
+        $shadow = ['none' => 'none', 'soft' => '0 16px 48px rgba(86,61,43,.07)', 'strong' => '0 28px 80px rgba(86,61,43,.13)'];
         $brandSoft = self::mixWithWhite($v['brand'], 0.88);
         $accentSoft = self::mixWithWhite($v['accent'], 0.9);
         $brandText = self::contrastRatio('#ffffff', $v['brand']) >= self::contrastRatio($v['text'], $v['brand']) ? '#ffffff' : $v['text'];
@@ -157,18 +164,18 @@ final class DesignSystem
         return <<<CSS
 /* Talvoro Design System v0.15 — semantic tokens; no editor-provided CSS. */
 :root{
-  --talvoro-brand:{$v['brand']};--talvoro-accent:{$v['accent']};--talvoro-bg:{$v['background']};--talvoro-surface:{$v['surface']};
-  --talvoro-text:{$v['text']};--talvoro-muted:{$v['muted']};--talvoro-border:{$v['border']};--talvoro-brand-soft:{$brandSoft};--talvoro-accent-soft:{$accentSoft};
+  --talvoro-brand:{$v['brand']};--talvoro-on-brand:{$onBrand};--talvoro-accent:{$v['accent']};--talvoro-depth:{$v['depth']};--talvoro-bg:{$v['background']};--talvoro-surface:{$v['surface']};
+  --talvoro-text:{$v['text']};--talvoro-muted:{$v['muted']};--talvoro-border:{$v['border']};--talvoro-brand-soft:{$brandSoft};--talvoro-accent-soft:{$accentSoft};--talvoro-action:#d85f4a;--talvoro-action-hover:#c94f3d;
   --talvoro-font-heading:{$headingFont};--talvoro-font-body:{$bodyFont};--talvoro-content-width:{$v['content_width']}px;--talvoro-wide-width:{$v['wide_width']}px;
   --talvoro-section-space:{$spacing[$v['section_spacing']]};--talvoro-radius:{$radius[$v['radius']]};--talvoro-button-radius:{$button[$v['button_radius']]};--talvoro-shadow:{$shadow[$v['shadow']]};
   --talvoro-h1:{$scale['h1']};--talvoro-h2:{$scale['h2']};--talvoro-h3:{$scale['h3']};
 }
-body.public-body{background:var(--talvoro-bg);color:var(--talvoro-text);font-family:var(--talvoro-font-body);}
+body.public-body{background:radial-gradient(900px 580px at 4% -12%,rgba(255,111,82,.12),transparent 64%),radial-gradient(760px 520px at 96% 3%,rgba(59,207,200,.10),transparent 62%),linear-gradient(180deg,#fbf8f5 0%,#f8f4f0 54%,#f4eee8 100%);color:var(--talvoro-text);font-family:var(--talvoro-font-body);}
 :where(body.public-body h1,body.public-body h2,body.public-body h3,body.public-body h4){font-family:var(--talvoro-font-heading);color:inherit;}
 :where(body.public-body h1){font-size:var(--talvoro-h1);}:where(body.public-body h2){font-size:var(--talvoro-h2);}:where(body.public-body h3){font-size:var(--talvoro-h3);}
-body.public-body .public-main a:not(.home-pill){color:var(--talvoro-accent);text-decoration:{$linkDecoration};text-decoration-thickness:.08em;text-underline-offset:.16em;}
+body.public-body .public-main a:not(.home-pill){color:var(--talvoro-action);text-decoration:{$linkDecoration};text-decoration-thickness:.08em;text-underline-offset:.16em;}
 body.public-body .home-pill,body.public-body .button{border-radius:var(--talvoro-button-radius);}
-body.public-body .home-pill.primary{background:var(--talvoro-brand);border-color:var(--talvoro-brand);color:{$brandText};}
+body.public-body .home-pill.primary{background:var(--talvoro-action);border-color:var(--talvoro-action);color:#ffffff;}
 body.public-body .home-pill.secondary{border-color:var(--talvoro-border);color:var(--talvoro-text);}
 body.public-body :where(.home-featured-card,.home-news-card,.page-testimonial,.page-faq-list details,.collection-card,.collection-price-card){border-radius:var(--talvoro-radius);box-shadow:var(--talvoro-shadow);}
 .page-blocks .talvoro-section{box-sizing:border-box;width:min(calc(100% - 2rem),var(--talvoro-content-width));margin-inline:auto;padding-block:var(--talvoro-section-space);padding-inline:clamp(1rem,2.4vw,2rem);}
@@ -180,8 +187,8 @@ body.public-body :where(.home-featured-card,.home-news-card,.page-testimonial,.p
 .page-blocks .talvoro-section.talvoro-align-center{text-align:center;}
 .page-blocks .talvoro-section.talvoro-align-center :where(.home-section-heading,.home-hero-actions){justify-content:center;}
 .page-blocks .talvoro-section.talvoro-tone-soft{background:var(--talvoro-brand-soft);}
-.page-blocks .talvoro-section.talvoro-tone-accent{background:var(--talvoro-brand);color:{$brandText};}
-.page-blocks .talvoro-section.talvoro-tone-accent :where(a,.home-section-link,.text-link){color:{$brandText};}
+.page-blocks .talvoro-section.talvoro-tone-accent{background:var(--talvoro-brand-soft);color:var(--talvoro-text);}
+.page-blocks .talvoro-section.talvoro-tone-accent :where(a,.home-section-link,.text-link){color:var(--talvoro-action);}
 .page-blocks .talvoro-section.talvoro-tone-dark{background:var(--talvoro-text);color:{$darkText};}
 .page-blocks .talvoro-section.talvoro-tone-dark :where(a,.home-section-link,.text-link){color:{$darkText};}
 .page-blocks .page-builder-hero.talvoro-variant-centered{grid-template-columns:1fr;text-align:center;}
@@ -215,8 +222,8 @@ body.public-body :where(.home-featured-card,.home-news-card,.page-testimonial,.p
 .talvoro-builder-preview-blocks [data-style-alignment="center"]{text-align:center;}
 .talvoro-builder-preview-blocks [data-style-alignment="center"] :where(.home-section-heading,.home-hero-actions){justify-content:center;}
 .talvoro-builder-preview-blocks [data-style-tone="soft"]{background:var(--talvoro-brand-soft);}
-.talvoro-builder-preview-blocks [data-style-tone="accent"]{background:var(--talvoro-brand);color:{$brandText};}
-.talvoro-builder-preview-blocks [data-style-tone="accent"] :where(a,.home-section-link,.text-link){color:{$brandText};}
+.talvoro-builder-preview-blocks [data-style-tone="accent"]{background:var(--talvoro-brand-soft);color:var(--talvoro-text);}
+.talvoro-builder-preview-blocks [data-style-tone="accent"] :where(a,.home-section-link,.text-link){color:var(--talvoro-action);}
 .talvoro-builder-preview-blocks [data-style-tone="dark"]{background:var(--talvoro-text);color:{$darkText};}
 .talvoro-builder-preview-blocks [data-style-tone="dark"] :where(a,.home-section-link,.text-link){color:{$darkText};}
 @media(max-width:720px){.page-blocks .talvoro-section{width:min(calc(100% - 1rem),var(--talvoro-content-width));padding-inline:1rem;}}
@@ -228,7 +235,7 @@ CSS;
     {
         $v = self::values();
         return [
-            'color.brand' => $v['brand'], 'color.accent' => $v['accent'], 'color.background' => $v['background'], 'color.surface' => $v['surface'],
+            'color.brand' => $v['brand'], 'color.accent' => $v['accent'], 'color.depth' => $v['depth'], 'color.background' => $v['background'], 'color.surface' => $v['surface'],
             'color.text' => $v['text'], 'color.muted' => $v['muted'], 'color.border' => $v['border'],
             'font.heading' => $v['heading_font'], 'font.body' => $v['body_font'], 'typography.scale' => $v['type_scale'],
             'size.content' => $v['content_width'] . 'px', 'size.wide' => $v['wide_width'] . 'px', 'spacing.section' => $v['section_spacing'],
@@ -259,7 +266,7 @@ CSS;
     private static function fontStacks(): array
     {
         return [
-            'system' => 'system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+            'system' => '-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Segoe UI",sans-serif',
             'humanist' => '"Avenir Next",Avenir,"Segoe UI",system-ui,sans-serif',
             'editorial' => 'Iowan Old Style,"Palatino Linotype",Palatino,"Times New Roman",serif',
             'modern' => 'Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif',

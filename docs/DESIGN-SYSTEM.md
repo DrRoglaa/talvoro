@@ -28,6 +28,30 @@ The core idea is simple:
 | **Safe by default** | Unknown/malformed values normalize to supported defaults |
 | **Accessible guidance** | Contrast problems remain visible without silently overriding editor choices |
 
+## Redesign CSS architecture
+
+During the complete redesign, Talvoro intentionally uses four CSS layers:
+
+1. `talvoro-foundation.css` — product tokens, focus/motion, shared control/status primitives.
+2. `app.css` — temporary legacy compatibility layer retained while screens are migrated.
+3. `talvoro-public.css` or `talvoro-admin.css` — redesigned product-shell and context-specific rules.
+4. `/theme.css` — active public-theme tokens/CSS; loaded only for public rendering and public previews.
+
+`app.css` is not the future source of truth. Later redesign plans move verified rules into focused stylesheets and delete the corresponding legacy rules only after visual/regression checks pass.
+
+The CMS product palette (`--tv-*`) is independent of the active public theme. Public content/theme components use `--talvoro-*` semantic tokens produced by `DesignSystem`.
+
+### Approved product token roles
+
+| Role | Purpose |
+| --- | --- |
+| **Ink** | Primary text, dark CMS navigation, strong neutral controls |
+| **Parchment / Ivory** | Product canvas and warm working surfaces |
+| **Coral / Terracotta** | Brand identity and primary actions; not error semantics |
+| **Sea Glass** | Complementary brand accent and calm positive emphasis |
+| **Indigo / Plum** | Depth, selected states, and secondary emphasis |
+| **Success / Warning / Danger / Info** | Dedicated semantic states kept separate from brand colors |
+
 ## Theme-scoped tokens
 
 Theme tokens are managed under:

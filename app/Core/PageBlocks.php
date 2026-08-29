@@ -31,7 +31,7 @@ final class PageBlocks
     /** @return list<string> */
     public static function types(): array
     {
-        return ['hero','values','cards','gallery','testimonials','faq','stats','custom','latest_posts','collection','cta','pattern'];
+        return ['hero','values','cards','gallery','testimonials','faq','stats','custom','latest_posts','collection','cta','contact','pattern'];
     }
 
     /** @return list<array<string,mixed>> */
@@ -97,6 +97,7 @@ final class PageBlocks
                 'latest_posts' => self::latestPosts($raw, $id, $errors),
                 'collection' => self::collection($raw, $id, $errors),
                 'cta' => self::cta($raw, $id, $errors),
+                'contact' => self::contact($raw, $id, $errors),
                 'pattern' => self::pattern($raw, $id, $errors),
             };
             if ($block !== null) {
@@ -312,7 +313,10 @@ final class PageBlocks
                 continue;
             }
             if (($block['type'] ?? '') !== 'pattern') {
-                $out[] = $block;
+                $resolvedBlock = $block;
+                $resolvedBlock['_render_owner_id'] = (string)($block['id'] ?? '');
+                $resolvedBlock['_render_block_id'] = (string)($block['id'] ?? '');
+                $out[] = $resolvedBlock;
                 continue;
             }
             $pattern = PagePatterns::find((int)($block['pattern_id'] ?? 0));
@@ -325,7 +329,10 @@ final class PageBlocks
                     if ($resolved !== null) $out[] = $resolved;
                     continue;
                 }
-                $out[] = $inner;
+                $resolvedInner = $inner;
+                $resolvedInner['_render_owner_id'] = (string)($block['id'] ?? '');
+                $resolvedInner['_render_block_id'] = (string)($inner['id'] ?? '');
+                $out[] = $resolvedInner;
             }
         }
         return $out;
@@ -440,11 +447,12 @@ final class PageBlocks
     {
         return match ($type) {
             'hero' => ['default' => 'Split', 'centered' => 'Centered', 'minimal' => 'Minimal'],
-            'cards' => ['default' => 'Standard', 'editorial' => 'Editorial', 'compact' => 'Compact'],
+            'cards' => ['default' => 'Standard', 'editorial' => 'Editorial', 'compact' => 'Compact', 'audiences' => 'Audience stories'],
             'testimonials' => ['default' => 'Cards', 'quote' => 'Editorial quote'],
             'stats' => ['default' => 'Cards', 'inline' => 'Inline'],
             'cta' => ['default' => 'Band', 'minimal' => 'Minimal'],
             'collection' => ['default' => 'Standard', 'compact' => 'Compact'],
+            'custom' => ['default' => 'Default', 'product-ui' => 'Product UI', 'ownership' => 'Ownership diagram', 'capabilities' => 'Capabilities', 'install' => 'Install paths', 'theme-showcase' => 'Theme showcase'],
             default => ['default' => 'Default'],
         };
     }
@@ -742,6 +750,27 @@ final class PageBlocks
             'heading' => $heading,
             'button_label' => $label,
             'button_url' => $url,
+        ];
+    }
+
+    /** @param list<string> $errors */
+    private static function contact(array $raw, string $id, array &$errors): array
+    {
+        $enabled = !array_key_exists('enabled', $raw) || !empty($raw['enabled']);
+        $showSubject = !array_key_exists('show_subject', $raw) || !empty($raw['show_subject']);
+        $success = self::text($raw, 'success_message', 300);
+        $submit = self::text($raw, 'submit_label', 80);
+        return [
+            'id' => $id,
+            'type' => 'contact',
+            'enabled' => $enabled,
+            'heading' => self::text($raw, 'heading', 180),
+            'intro' => self::text($raw, 'intro', 1200),
+            'show_subject' => $showSubject,
+            'require_subject' => $showSubject && !empty($raw['require_subject']),
+            'subject_prefix' => self::text($raw, 'subject_prefix', 80),
+            'success_message' => $success !== '' ? $success : 'Thanks — your message has been received.',
+            'submit_label' => $submit !== '' ? $submit : 'Send message',
         ];
     }
 

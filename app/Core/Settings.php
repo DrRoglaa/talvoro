@@ -93,9 +93,9 @@ final class Settings
     public static function frontendTheme(): string
     {
         try {
-            return (string)(ThemeManager::active()['slug'] ?? 'trenlume-light');
+            return (string)(ThemeManager::active()['slug'] ?? 'talvoro-editorial');
         } catch (\Throwable) {
-            return 'trenlume-light';
+            return 'talvoro-editorial';
         }
     }
 
