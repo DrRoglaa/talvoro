@@ -59,8 +59,19 @@ final class RateLimiter
         self::clear('system-account:' . self::account($email));
     }
 
+    public static function tooManyContactAttempts(): bool
+    {
+        return self::tooMany('contact-ip:' . self::ip(), 5);
+    }
+
+    public static function hitContact(): void
+    {
+        self::hit('contact-ip:' . self::ip());
+    }
+
     private static function tooMany(string $value, int $limit): bool
     {
+        self::cleanup();
         $stmt = Database::connection()->prepare(
             'SELECT COUNT(*) FROM login_attempts
              WHERE attempt_key=? AND attempted_at >= (UTC_TIMESTAMP() - INTERVAL 15 MINUTE)'
@@ -74,6 +85,11 @@ final class RateLimiter
         Database::connection()->prepare(
             'INSERT INTO login_attempts (attempt_key,attempted_at) VALUES (?,UTC_TIMESTAMP())'
         )->execute([self::key($value)]);
+        self::cleanup();
+    }
+
+    private static function cleanup(): void
+    {
         Database::connection()->exec(
             'DELETE FROM login_attempts WHERE attempted_at < (UTC_TIMESTAMP() - INTERVAL 1 DAY)'
         );

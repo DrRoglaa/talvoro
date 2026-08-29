@@ -32,6 +32,10 @@ use CMS\Core\Auth;
 use CMS\Core\UserManager;
 use CMS\Core\ContentHistory;
 use CMS\Core\ContentLifecycle;
+use CMS\Core\ContactFormContext;
+use CMS\Core\ContactSettings;
+use CMS\Core\ContactSubmissionService;
+use CMS\Core\ContactSubmissions;
 use CMS\Core\ContentModels;
 use CMS\Core\ContentModelStarters;
 use CMS\Core\PagePatternStarters;
@@ -76,6 +80,17 @@ $checks['Structured content migrations present'] = is_file(base_path('database/m
     && is_file(base_path('database/migrations/017_content_models_hardening.sql'));
 $checks['Menus Media SEO 2.0 migration present'] = is_file(base_path('database/migrations/018_menus_media_seo2.sql'));
 $checks['Design System migration present'] = is_file(base_path('database/migrations/019_design_system.sql'));
+$checks['Contact Forms migration present'] = is_file(base_path('database/migrations/022_contact_forms.sql'));
+$checks['Contact Forms regression check available'] = is_file(base_path('bin/check-contact-forms.php'));
+$checks['Contact Forms services available'] = class_exists(ContactFormContext::class)
+    && class_exists(ContactSettings::class)
+    && class_exists(ContactSubmissionService::class)
+    && class_exists(ContactSubmissions::class);
+$checks['Contact Form Page Builder block available'] = in_array('contact', PageBlocks::types(), true)
+    && is_file(base_path('resources/views/page/blocks/contact.php'))
+    && str_contains((string)@file_get_contents(base_path('public/assets/js/page-builder.js')), "contact: 'Contact form'");
+$checks['Contact Form public route reserved'] = str_contains((string)@file_get_contents(base_path('routes/web.php')), "post('/_talvoro/contact'")
+    && str_contains((string)@file_get_contents(base_path('app/Core/Pages.php')), "'/_talvoro'");
 $checks['Design System service available'] = class_exists(DesignSystem::class) && count(DesignSystem::definitions()) >= 16 && method_exists(DesignSystem::class, 'activeTheme');
 $designBuilder=(string)@file_get_contents(base_path('public/assets/js/page-builder.js'));
 $checks['Visual editing field focus available'] = str_contains($designBuilder,'data-preview-field') && str_contains($designBuilder,'focusInspectorField') && str_contains($designBuilder,'data-preview-focus');
@@ -93,6 +108,16 @@ $checks['v0.15.0 design check available'] = is_file(base_path('bin/check-v0150.p
 $checks['Starter content models available'] = class_exists(ContentModelStarters::class) && count(ContentModelStarters::catalog()) >= 15;
 $checks['Starter page patterns available'] = class_exists(PagePatternStarters::class) && count(PagePatternStarters::catalog()) >= 32;
 $checks['Starter library search script present'] = is_file(base_path('public/assets/js/starter-library.js'));
+$foundationCss = (string)@file_get_contents(base_path('public/assets/css/talvoro-foundation.css'));
+$publicRedesignCss = (string)@file_get_contents(base_path('public/assets/css/talvoro-public.css'));
+$adminRedesignCss = (string)@file_get_contents(base_path('public/assets/css/talvoro-admin.css'));
+$checks['Talvoro redesign foundation stylesheet present'] = str_contains($foundationCss, '--tv-action-primary: #d85f4a');
+$checks['Talvoro public shell stylesheet present'] = str_contains($publicRedesignCss, '.talvoro-public-shell');
+$checks['Talvoro admin shell stylesheet present'] = str_contains($adminRedesignCss, '.talvoro-admin-shell');
+$checks['Talvoro reduced-motion foundation present'] = str_contains($foundationCss, '@media (prefers-reduced-motion: reduce)');
+$checks['Talvoro 01d typography check available'] = is_file(base_path('bin/check-redesign-01d.php'));
+$checks['Talvoro 01d typography migration available'] = is_file(base_path('database/migrations/024_trenlume_typography_defaults.sql'));
+
 $starterCss=(string)@file_get_contents(base_path('public/assets/css/app.css'));
 $checks['Structured model toggle cards styled'] = str_contains($starterCss,'.toggle-card') && str_contains($starterCss,'.toggle-grid') && str_contains($starterCss,'grid-template-columns: 20px minmax(0, 1fr)');
 $checks['Structured content editor scripts present'] = is_file(base_path('public/assets/js/structured-content.js'))
@@ -220,6 +245,7 @@ try {
         'menu_items',
         'media_folders',
         'media_variants',
+        'contact_submissions',
     ];
 
     foreach ($required as $table) {
@@ -365,7 +391,7 @@ $checks['Security manage permission exists'] = (int)$db->query("SELECT COUNT(*) 
     if ($checks['Table themes']) {
         $activeThemes = (int)$db->query('SELECT COUNT(*) FROM themes WHERE is_active=1')->fetchColumn();
         $checks['Exactly one active theme'] = $activeThemes === 1;
-        $checks['Trenlume Light theme exists'] = (int)$db->query("SELECT COUNT(*) FROM themes WHERE slug='trenlume-light' AND is_builtin=1")->fetchColumn() === 1;
+        $checks['Trenlume Light theme removed'] = (int)$db->query("SELECT COUNT(*) FROM themes WHERE slug='trenlume-light'")->fetchColumn() === 0;
     }
 
     $checks['OpenSSL available'] = function_exists('openssl_encrypt') && function_exists('openssl_decrypt');
@@ -379,6 +405,9 @@ $checks['Release manifest integrity'] = is_file($releaseManifest)
     ? (bool)($releaseIntegrity['ok'] ?? false)
     : is_dir(base_path('scripts/release')); // Source checkouts generate release.json during packaging.
     $checks['Mail settings readable'] = is_array(MailSettings::config(false));
+    $checks['Contact settings readable'] = is_array(ContactSettings::config());
+    $checks['Contact permissions exist'] = (int)$db->query("SELECT COUNT(*) FROM permissions WHERE name IN ('contact.view','contact.manage')")->fetchColumn() === 2;
+    $checks['Super Administrator has contact permissions'] = (int)$db->query("SELECT COUNT(*) FROM role_permissions rp JOIN roles r ON r.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id WHERE r.name='super_administrator' AND p.name IN ('contact.view','contact.manage')")->fetchColumn() === 2;
 
 
     $checks['Scanner probe classification'] = ScannerGuard::isLikelyScannerPath('/wp-login.php')

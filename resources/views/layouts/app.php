@@ -118,7 +118,21 @@ $renderPublicMenu = static function (array $items, string $class = '') use (&$re
 };
 $publicLogo = HomePage::logoPath();
 $publicTagline = HomePage::publicTagline();
-$customModels = $isAdminArea && Gate::allows('custom_content.view') ? array_values(array_filter(ContentModels::all(true), static fn(array $m): bool => Gate::allowsModel((int)$m['id'],'view'))) : [];
+$isTalvoroProductSite = (!$isAdminRequest || $publicPreview)
+    && !$isPrivateAuth
+    && $frontendTheme === 'talvoro-editorial'
+    && mb_strtolower(trim($siteName)) === 'talvoro';
+$reservedAdminNavLabels = ['posts','categories','pages','contact submissions','media','blog settings'];
+$reservedAdminNavSlugs = ['posts','categories','pages','contact-submissions','media','blog-settings'];
+$customModels = $isAdminArea && Gate::allows('custom_content.view') ? array_values(array_filter(
+    ContentModels::all(true),
+    static function (array $m) use ($reservedAdminNavLabels, $reservedAdminNavSlugs): bool {
+        if (!Gate::allowsModel((int)$m['id'], 'view')) return false;
+        $label = strtolower(trim((string)($m['plural_name'] ?? '')));
+        $slug = strtolower(trim((string)($m['slug'] ?? '')));
+        return !in_array($label, $reservedAdminNavLabels, true) && !in_array($slug, $reservedAdminNavSlugs, true);
+    }
+)) : [];
 $navIcon = static function (string $name): string {
     $paths = [
         'overview' => '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
@@ -184,8 +198,16 @@ $navIcon = static function (string $name): string {
         <?php if (!empty($meta['social_image'])): ?><meta name="twitter:image" content="<?= e($meta['social_image']) ?>"><?php endif; ?>
     <?php endif; ?>
     <?php if (is_array($structuredData)): ?><script type="application/ld+json"><?= json_encode($structuredData, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?></script><?php endif; ?>
+    <link rel="stylesheet" href="/assets/css/talvoro-foundation.css?v=<?= e(app_version()) ?>-<?= e((string)(@filemtime(base_path('public/assets/css/talvoro-foundation.css')) ?: 0)) ?>">
     <link rel="stylesheet" href="/assets/css/app.css?v=<?= e(app_version()) ?>">
-    <?php if (!$isAdminRequest || $publicPreview): ?><link rel="stylesheet" href="/theme.css?v=<?= e(app_version()) ?>"><?php endif; ?>
+    <?php if ($isAdminArea): ?>
+        <link rel="stylesheet" href="/assets/css/talvoro-admin.css?v=<?= e(app_version()) ?>-<?= e((string)(@filemtime(base_path('public/assets/css/talvoro-admin.css')) ?: 0)) ?>">
+    <?php elseif (!$isPrivateAuth): ?>
+        <link rel="stylesheet" href="/assets/css/talvoro-public.css?v=<?= e(app_version()) ?>-<?= e((string)(@filemtime(base_path('public/assets/css/talvoro-public.css')) ?: 0)) ?>">
+    <?php endif; ?>
+    <?php if (!$isAdminRequest || $publicPreview): ?>
+        <link rel="stylesheet" href="/theme.css?v=<?= e(app_version()) ?>">
+    <?php endif; ?>
     <?php if ($isAdminArea && $path === AdminPath::url('/security')): ?><script src="/assets/js/admin-security.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
     <?php if ($isAdminArea): ?><script src="/assets/js/admin-nav.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
     <?php if ($isAdminArea): ?><script src="/assets/js/admin-form-state.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
@@ -193,12 +215,13 @@ $navIcon = static function (string $name): string {
     <?php if ($isAdminArea && str_starts_with($path, AdminPath::url('/menus'))): ?><script src="/assets/js/menus.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
     <?php if ($isAdminArea && preg_match('#^' . preg_quote($adminBase, '#') . '/users/\d+/security$#', $path)): ?><script src="/assets/js/recovery-codes.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
 </head>
-<body class="<?= $isAdminArea ? 'admin-body' : ($isPrivateAuth ? 'auth-body private-auth-body' : 'public-body theme-' . e($frontendTheme)) ?>">
+<body class="<?= $isAdminArea ? 'admin-body' : ($isPrivateAuth ? 'auth-body private-auth-body' : 'public-body theme-' . e($frontendTheme) . ($isTalvoroProductSite ? ' talvoro-product-site' : '')) ?>">
 <div class="ambient ambient-one" aria-hidden="true"></div>
 <div class="ambient ambient-two" aria-hidden="true"></div>
 
 <?php if ($isAdminArea): ?>
-<div class="shell admin-shell" data-admin-shell>
+<div class="shell admin-shell talvoro-admin-shell" data-admin-shell data-nav-state="closed">
+    <a class="cms-skip-link" href="#cms-main-content">Skip to content</a>
     <button class="cms-sidebar-backdrop" type="button" data-admin-nav-close aria-label="Close navigation" tabindex="-1"></button>
     <aside class="cms-sidebar" id="cms-sidebar" data-admin-nav>
         <div class="cms-sidebar-head">
@@ -211,18 +234,28 @@ $navIcon = static function (string $name): string {
 
         <nav class="cms-sidebar-nav" aria-label="CMS navigation">
             <div class="cms-nav-group">
-                <span class="cms-nav-label">Workspace</span>
+                <span class="cms-nav-label">Overview</span>
                 <a class="cms-nav-link<?= $isActive($adminBase) ?>" href="<?= e($adminBase) ?>"><span class="cms-nav-icon"><?= $navIcon('overview') ?></span><span>Overview</span></a>
             </div>
 
             <div class="cms-nav-group">
                 <span class="cms-nav-label">Content</span>
+                <?php if (Gate::allows('pages.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/pages', true) ?>" href="<?= e(admin_url('/pages')) ?>"><span class="cms-nav-icon"><?= $navIcon('pages') ?></span><span>Pages</span></a><?php endif; ?>
                 <?php if (Gate::allows('content.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/posts', true) ?>" href="<?= e(admin_url('/posts')) ?>"><span class="cms-nav-icon"><?= $navIcon('posts') ?></span><span>Posts</span></a><?php endif; ?>
                 <?php if (Gate::allows('blog.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/blog-categories', true) ?>" href="<?= e(admin_url('/blog-categories')) ?>"><span class="cms-nav-icon"><?= $navIcon('categories') ?></span><span>Categories</span></a><?php endif; ?>
-                <?php if (Gate::allows('pages.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/pages', true) ?>" href="<?= e(admin_url('/pages')) ?>"><span class="cms-nav-icon"><?= $navIcon('pages') ?></span><span>Pages</span></a><?php endif; ?>
                 <?php foreach ($customModels as $customModel): ?><a class="cms-nav-link<?= $isActive($adminBase . '/content/' . (string)$customModel['slug'], true) ?>" href="<?= e(admin_url('/content/' . (string)$customModel['slug'])) ?>"><span class="cms-nav-icon"><?= $navIcon((string)($customModel['icon'] ?? 'collection')) ?></span><span><?= e((string)$customModel['plural_name']) ?></span></a><?php endforeach; ?>
                 <?php if (Gate::allows('media.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/media', true) ?>" href="<?= e(admin_url('/media')) ?>"><span class="cms-nav-icon"><?= $navIcon('media') ?></span><span>Media</span></a><?php endif; ?>
+                <?php if (Gate::allows('contact.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/contact-submissions', true) ?>" href="<?= e(admin_url('/contact-submissions')) ?>"><span class="cms-nav-icon"><?= $navIcon('mail') ?></span><span>Contact submissions</span></a><?php endif; ?>
                 <?php if (Gate::allows('blog.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/blog-settings', true) ?>" href="<?= e(admin_url('/blog-settings')) ?>"><span class="cms-nav-icon"><?= $navIcon('blog') ?></span><span>Blog settings</span></a><?php endif; ?>
+            </div>
+
+            <div class="cms-nav-group">
+                <span class="cms-nav-label">Design</span>
+                <?php if (Gate::allows('design.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/design/styles', true) ?>" href="<?= e(admin_url('/design/styles')) ?>"><span class="cms-nav-icon"><?= $navIcon('design') ?></span><span>Styles</span></a><?php endif; ?>
+                <?php if (Gate::allows('pages.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/patterns', true) ?>" href="<?= e(admin_url('/patterns')) ?>"><span class="cms-nav-icon"><?= $navIcon('patterns') ?></span><span>Patterns</span></a><?php endif; ?>
+                <?php if (Gate::allows('themes.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/themes', true) ?>" href="<?= e(admin_url('/themes')) ?>"><span class="cms-nav-icon"><?= $navIcon('themes') ?></span><span>Themes</span></a><?php endif; ?>
+                <?php if (Gate::allows('menus.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/menus', true) ?>" href="<?= e(admin_url('/menus')) ?>"><span class="cms-nav-icon"><?= $navIcon('menus') ?></span><span>Menus</span></a><?php endif; ?>
+                <?php if (Gate::allows('content_models.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/content-models', true) || $isActive($adminBase . '/components', true) ? ' is-active' : '' ?>" href="<?= e(admin_url('/content-models')) ?>"><span class="cms-nav-icon"><?= $navIcon('models') ?></span><span>Content models</span></a><?php endif; ?>
             </div>
 
             <div class="cms-nav-group">
@@ -234,27 +267,13 @@ $navIcon = static function (string $name): string {
             </div>
 
             <div class="cms-nav-group">
-                <span class="cms-nav-label">Design</span>
-                <?php if (Gate::allows('design.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/design/styles', true) ?>" href="<?= e(admin_url('/design/styles')) ?>"><span class="cms-nav-icon"><?= $navIcon('design') ?></span><span>Styles</span></a><?php endif; ?>
-                <?php if (Gate::allows('pages.view')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/patterns', true) ?>" href="<?= e(admin_url('/patterns')) ?>"><span class="cms-nav-icon"><?= $navIcon('patterns') ?></span><span>Patterns</span></a><?php endif; ?>
-                <?php if (Gate::allows('themes.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/themes', true) ?>" href="<?= e(admin_url('/themes')) ?>"><span class="cms-nav-icon"><?= $navIcon('themes') ?></span><span>Themes</span></a><?php endif; ?>
-            </div>
-
-            <div class="cms-nav-group">
-                <span class="cms-nav-label">Configuration</span>
-                <?php if (Gate::allows('menus.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/menus', true) ?>" href="<?= e(admin_url('/menus')) ?>"><span class="cms-nav-icon"><?= $navIcon('menus') ?></span><span>Menus</span></a><?php endif; ?>
-                <?php if (Gate::allows('content_models.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/content-models', true) || $isActive($adminBase . '/components', true) ? ' is-active' : '' ?>" href="<?= e(admin_url('/content-models')) ?>"><span class="cms-nav-icon"><?= $navIcon('models') ?></span><span>Content models</span></a><?php endif; ?>
-                <?php if (Gate::allows('mail.manage') || in_array((string)($user['role_name'] ?? ''), ['super_administrator','administrator'], true)): ?><a class="cms-nav-link<?= $isActive($adminBase . '/mail', true) ?>" href="<?= e(admin_url('/mail')) ?>"><span class="cms-nav-icon"><?= $navIcon('mail') ?></span><span>Email</span></a><?php endif; ?>
+                <span class="cms-nav-label">System</span>
+                <?php if (Gate::allows('site.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/site-mode', true) ?>" href="<?= e(admin_url('/site-mode')) ?>"><span class="cms-nav-icon"><?= $navIcon('site') ?></span><span>Site mode</span></a><?php endif; ?>
+                <?php if (Gate::allows('mail.manage') || Gate::allows('contact.manage') || in_array((string)($user['role_name'] ?? ''), ['super_administrator','administrator'], true)): ?><a class="cms-nav-link<?= $isActive($adminBase . '/mail', true) ?>" href="<?= e(admin_url('/mail')) ?>"><span class="cms-nav-icon"><?= $navIcon('mail') ?></span><span>Email</span></a><?php endif; ?>
                 <?php if (Gate::allows('security.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/security', true) ?>" href="<?= e(admin_url('/security')) ?>"><span class="cms-nav-icon"><?= $navIcon('security') ?></span><span>Security</span></a><?php endif; ?>
+                <?php if (Gate::allows('users.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/users', true) ?>" href="<?= e(admin_url('/users')) ?>"><span class="cms-nav-icon"><?= $navIcon('users') ?></span><span>Users</span></a><?php endif; ?>
                 <?php if (Gate::allows('system.manage')): ?><a class="cms-nav-link<?= $isActive($adminBase . '/system', true) ?>" href="<?= e(admin_url('/system')) ?>"><span class="cms-nav-icon"><?= $navIcon('system') ?></span><span>System</span></a><?php endif; ?>
             </div>
-
-            <?php if (Gate::allows('users.manage')): ?>
-            <div class="cms-nav-group">
-                <span class="cms-nav-label">Access</span>
-                <a class="cms-nav-link<?= $isActive($adminBase . '/users', true) ?>" href="<?= e(admin_url('/users')) ?>"><span class="cms-nav-icon"><?= $navIcon('users') ?></span><span>Users</span></a>
-            </div>
-            <?php endif; ?>
         </nav>
 
         <div class="cms-sidebar-foot">
@@ -288,15 +307,15 @@ $navIcon = static function (string $name): string {
             </div>
         </header>
 
-        <main class="main admin-main"><?= $content ?></main>
+        <main class="main admin-main" id="cms-main-content" tabindex="-1"><?= $content ?></main>
     </div>
 </div>
 <?php elseif ($isPrivateAuth): ?>
 <div class="private-auth-shell"><main class="main"><?= $content ?></main></div>
 <?php else: ?>
 <?php if ($publicPreview): ?><div class="public-preview-bar" role="status"><strong>Preview</strong><span>This is a private CMS preview. Visitors cannot see draft changes here.</span></div><?php endif; ?>
-<div class="public-shell">
-    <header class="public-nav">
+<div class="public-shell talvoro-public-shell" data-public-shell>
+    <header class="public-nav talvoro-public-header<?= $isTalvoroProductSite ? ' product-site-header' : '' ?>">
         <a class="public-brand" href="/">
             <?php if ($publicLogo !== ''): ?><span class="public-logo"><img src="<?= e($publicLogo) ?>" alt=""></span><?php else: ?><span class="brand-mark small" aria-hidden="true"><span></span></span><?php endif; ?>
             <span class="public-brand-copy"><strong><?= e($siteName) ?></strong><?php if ($publicTagline !== ''): ?><small><?= e($publicTagline) ?></small><?php endif; ?></span>
@@ -322,7 +341,38 @@ $navIcon = static function (string $name): string {
 
     <main class="main public-main"><?= $content ?></main>
 
-    <footer class="public-footer rich-public-footer">
+    <footer class="public-footer rich-public-footer talvoro-public-footer">
+        <?php if ($isTalvoroProductSite): ?>
+        <div class="public-footer-main product-footer-main">
+            <div class="public-footer-brand product-footer-brand">
+                <a class="public-brand footer-brand" href="/">
+                    <?php if ($publicLogo !== ''): ?><span class="public-logo"><img src="<?= e($publicLogo) ?>" alt=""></span><?php else: ?><span class="brand-mark small" aria-hidden="true"><span></span></span><?php endif; ?>
+                    <span class="public-brand-copy"><strong><?= e($siteName) ?></strong><?php if ($publicTagline !== ''): ?><small><?= e($publicTagline) ?></small><?php endif; ?></span>
+                </a>
+                <p>Premium self-hosted publishing for people who want a polished website and operational ownership.</p>
+                <div class="product-footer-actions"><a href="/self-hosting#install">Get Talvoro →</a><a href="https://github.com/DrRoglaa/talvoro" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+            </div>
+            <?php if ($footerMenu): ?>
+                <?php foreach ($footerMenu as $group): $children = is_array($group['children'] ?? null) ? $group['children'] : []; ?>
+                    <div class="public-footer-column product-footer-column">
+                        <strong><?= e((string)($group['label'] ?? 'Explore')) ?></strong>
+                        <?php if ($children): ?>
+                            <?php foreach ($children as $item): ?>
+                                <a href="<?= e((string)($item['url'] ?? '#')) ?>"<?= !empty($item['open_new_tab']) ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><?= e((string)($item['label'] ?? 'Link')) ?></a>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <a href="<?= e((string)($group['url'] ?? '#')) ?>"<?= !empty($group['open_new_tab']) ? ' target="_blank" rel="noopener noreferrer"' : '' ?>><?= e((string)($group['label'] ?? 'Explore')) ?></a>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="public-footer-column product-footer-column"><strong>Product</strong><a href="/product">Product</a><a href="/themes">Themes</a><a href="/demo">Demo</a><a href="/self-hosting">Self-hosting</a></div>
+                <div class="public-footer-column product-footer-column"><strong>Resources</strong><a href="/guides">Guides</a><a href="/docs">Documentation</a><a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a></div>
+                <div class="public-footer-column product-footer-column"><strong>Project</strong><a href="/open-source">Open source</a><a href="/support">Support</a></div>
+                <div class="public-footer-column product-footer-column"><strong>Legal</strong><a href="/privacy">Privacy</a><a href="/security">Security</a></div>
+            <?php endif; ?>
+        </div>
+        <?php else: ?>
         <div class="public-footer-main">
             <div class="public-footer-brand">
                 <a class="public-brand footer-brand" href="/">
@@ -348,6 +398,7 @@ $navIcon = static function (string $name): string {
                 <?php endif; ?>
             </div>
         </div>
+        <?php endif; ?>
         <div class="public-footer-bottom">
             <span>Independent software, built with <span aria-label="heart">♥</span> by Indie developer (David Rok Roglič) in Slovenia.</span>
             <span>Talvoro version: <?= e(app_version()) ?></span>
@@ -355,5 +406,6 @@ $navIcon = static function (string $name): string {
     </footer>
 </div>
 <?php endif; ?>
+<?php if (!$isAdminRequest || $publicPreview): ?><script src="/assets/js/contact-form.js?v=<?= e(app_version()) ?>" defer></script><?php endif; ?>
 </body>
 </html>

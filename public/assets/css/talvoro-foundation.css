@@ -1,0 +1,160 @@
+/* Talvoro product foundation — Redesign 01c.
+   Uses the same warm/light visual language as the current Trenlume redesign
+   while retaining Talvoro's own information architecture and typography. */
+:root {
+  --tv-bg: #faf7f3;
+  --tv-bg-deep: #f3ede7;
+  --tv-panel: #fffdfa;
+  --tv-panel-soft: #f7f0eb;
+  /* Compatibility aliases used by earlier redesign layers. */
+  --tv-parchment: var(--tv-bg);
+  --tv-ivory: var(--tv-panel);
+
+  --tv-ink: #26221f;
+  --tv-ink-soft: #3b3430;
+  --tv-text: var(--tv-ink);
+  --tv-text-secondary: #625b56;
+  --tv-muted: #8d837c;
+  --tv-text-tertiary: var(--tv-muted);
+
+  --tv-coral: #ff6b52;
+  --tv-action-primary: #d85f4a;
+  --tv-action-primary-hover: #c94f3d;
+  --tv-aqua: #3bcfc8;
+  --tv-sea-glass: var(--tv-aqua);
+  --tv-sea-glass-strong: #2ebbb5;
+  --tv-indigo: #8d7af0;
+
+  --tv-success: #27aa83;
+  --tv-warning: #d9902f;
+  --tv-danger: #d95b56;
+  --tv-info: #6d78d8;
+
+  --tv-border: rgba(82,65,52,.12);
+  --tv-border-strong: rgba(82,65,52,.22);
+  --tv-focus: #ff6b52;
+
+  --tv-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", sans-serif;
+  --tv-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", sans-serif;
+  --tv-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --tv-space-1: .25rem;
+  --tv-space-2: .5rem;
+  --tv-space-3: .75rem;
+  --tv-space-4: 1rem;
+  --tv-space-5: 1.25rem;
+  --tv-space-6: 1.5rem;
+  --tv-space-8: 2rem;
+  --tv-space-10: 2.5rem;
+  --tv-space-12: 3rem;
+  --tv-space-16: 4rem;
+  --tv-space-20: 5rem;
+
+  --tv-radius-control: 14px;
+  --tv-radius-panel: 24px;
+  --tv-radius-editorial: 28px;
+  --tv-shadow-raised: 0 16px 48px rgba(86,61,43,.07);
+  --tv-shadow-dialog: 0 28px 80px rgba(86,61,43,.13);
+
+  --tv-control-height-compact: 38px;
+  --tv-control-height: 46px;
+  --tv-control-height-large: 52px;
+  --tv-content: 760px;
+  --tv-wide: 1240px;
+  --tv-shell: 1480px;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tv-focus) 58%, white);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(255,107,82,.18);
+  color: var(--tv-ink);
+}
+
+.button {
+  min-height: var(--tv-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border: 1px solid transparent;
+  border-radius: var(--tv-radius-control);
+  padding: .72rem 1.15rem;
+  font: 700 .92rem/1 var(--tv-font-ui);
+  letter-spacing: -.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+}
+.button:not(.secondary):not(.danger):not(.ghost) {
+  background: linear-gradient(180deg,#e36d59,var(--tv-action-primary));
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(216,95,74,.16);
+}
+.button:not(.secondary):not(.danger):not(.ghost):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(216,95,74,.20);
+}
+.button.secondary {
+  background: rgba(255,253,250,.82);
+  border-color: var(--tv-border);
+  color: var(--tv-text);
+  box-shadow: none;
+}
+.button.secondary:hover { background: #fffaf7; border-color: rgba(255,107,82,.25); }
+.button.ghost { background: transparent; color: var(--tv-text-secondary); box-shadow: none; }
+.button.ghost:hover { background: rgba(255,255,255,.62); color: var(--tv-text); }
+.button.danger { background: #fff6f4; border-color: #f4d4cf; color: var(--tv-danger); box-shadow: none; }
+.button.compact { min-height: var(--tv-control-height-compact); padding: .55rem .85rem; font-size: .84rem; }
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea) {
+  min-height: var(--tv-control-height);
+  border: 1px solid rgba(82,65,52,.14);
+  border-radius: 12px;
+  background: #fff;
+  color: #302a26;
+  font: 500 .95rem/1.45 var(--tv-font-ui);
+  padding-inline: .9rem;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea):focus {
+  border-color: rgba(255,107,82,.52);
+  box-shadow: 0 0 0 4px rgba(255,107,82,.07);
+}
+textarea { min-height: 7rem; }
+
+.notice {
+  border: 1px solid var(--tv-border);
+  border-radius: 16px;
+  padding: .9rem 1rem;
+  background: rgba(255,253,250,.92);
+  color: var(--tv-text);
+}
+.notice.success { border-color: rgba(39,170,131,.22); background: #f0faf6; }
+.notice.warning { border-color: rgba(217,144,47,.22); background: #fff8ed; }
+.notice.error { border-color: rgba(217,91,86,.22); background: #fff4f2; }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: .22rem .58rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  font: 750 .75rem/1 var(--tv-font-ui);
+}
+.status-badge.published { background: #eef9f5; border-color: rgba(39,170,131,.16); color: #218f70; }
+.status-badge.draft { background: #fff3ef; border-color: rgba(255,107,82,.15); color: #d95750; }
+.status-badge.scheduled { background: #f4f0ff; border-color: rgba(141,122,240,.16); color: #7562d4; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

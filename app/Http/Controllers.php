@@ -10,6 +10,7 @@ use CMS\Core\Auth;
 use CMS\Core\Categories;
 use CMS\Core\ContentHistory;
 use CMS\Core\ContentLifecycle;
+use CMS\Core\ContactSettings;
 use CMS\Core\Csrf;
 use CMS\Core\Crypto;
 use CMS\Core\Database;
@@ -214,6 +215,16 @@ final class Controllers
         }
 
         return null;
+    }
+
+    /** @param list<string> $permissions */
+    private static function requireAnyPermission(array $permissions): ?Response
+    {
+        if ($response = self::requireAuth()) return $response;
+        foreach ($permissions as $permission) {
+            if (Gate::allows($permission)) return null;
+        }
+        return new Response(View::render('errors/403', ['title' => 'Forbidden']), 403);
     }
 
     public static function dashboard(): Response
@@ -1008,13 +1019,22 @@ final class Controllers
 
     public static function mailSettings(): Response
     {
-        if ($response = self::requireAuth('mail.manage')) return $response;
+        if ($response = self::requireAnyPermission(['mail.manage', 'contact.manage'])) return $response;
+        $canManageMail = Gate::allows('mail.manage');
+        $canManageContact = Gate::allows('contact.manage');
         return new Response(View::render('admin/mail-settings', [
-            'title' => 'Email delivery',
-            'config' => MailSettings::config(false),
+            'title' => 'Email & contact forms',
+            'config' => $canManageMail ? MailSettings::config(false) : [],
+            'contactConfig' => $canManageContact ? ContactSettings::config() : [],
+            'contactRetentionOptions' => ContactSettings::retentionOptions(),
+            'canManageMail' => $canManageMail,
+            'canManageContact' => $canManageContact,
             'saved' => isset($_GET['saved']),
+            'contactSaved' => isset($_GET['contact_saved']),
             'tested' => (string)($_GET['tested'] ?? ''),
-            'deliveries' => Mailer::recentLog(20),
+            'errors' => [],
+            'contactErrors' => [],
+            'deliveries' => $canManageMail ? Mailer::recentLog(20) : [],
         ]));
     }
 
@@ -1030,8 +1050,18 @@ final class Controllers
         }
         if ($errors) {
             return new Response(View::render('admin/mail-settings', [
-                'title' => 'Email delivery','config' => array_merge(MailSettings::config(false), $_POST),
-                'saved' => false,'tested' => '','errors' => $errors,
+                'title' => 'Email & contact forms',
+                'config' => array_merge(MailSettings::config(false), $_POST),
+                'contactConfig' => Gate::allows('contact.manage') ? ContactSettings::config() : [],
+                'contactRetentionOptions' => ContactSettings::retentionOptions(),
+                'canManageMail' => true,
+                'canManageContact' => Gate::allows('contact.manage'),
+                'saved' => false,
+                'contactSaved' => false,
+                'tested' => '',
+                'errors' => $errors,
+                'contactErrors' => [],
+                'deliveries' => Mailer::recentLog(20),
             ]), 422);
         }
         Audit::log('mail.settings.update');

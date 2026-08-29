@@ -48,7 +48,8 @@ final class Mailer
         string $subject,
         string $text,
         string $html,
-        string $type = 'generic'
+        string $type = 'generic',
+        array $options = []
     ): void {
         $config = MailSettings::config();
 
@@ -60,10 +61,11 @@ final class Mailer
         }
 
         try {
-            self::smtpSend($config, $to, $subject, $text, $html);
-            self::log($type, $to, $subject, 'sent', null);
+            self::smtpSend($config, $to, $subject, $text, $html, $options);
+            $logSubject = self::logSubject($subject, $options);
+            self::log($type, $to, $logSubject, 'sent', null);
         } catch (\Throwable $e) {
-            self::log($type, $to, $subject, 'failed', mb_substr($e->getMessage(), 0, 1000));
+            self::log($type, $to, self::logSubject($subject, $options), 'failed', self::slice($e->getMessage(), 1000));
             throw $e;
         }
     }
@@ -100,7 +102,7 @@ final class Mailer
             . '</td></tr></table></td></tr></table></body></html>';
     }
 
-    private static function smtpSend(array $c, string $to, string $subject, string $text, string $html): void
+    private static function smtpSend(array $c, string $to, string $subject, string $text, string $html, array $options = []): void
     {
         $host = (string)$c['host'];
         $port = (int)$c['port'];
@@ -166,7 +168,7 @@ final class Mailer
             self::command($socket, 'RCPT TO:<' . $to . '>', [250,251]);
             self::command($socket, 'DATA', [354]);
 
-            $raw = self::message($c, $to, $subject, $text, $html);
+            $raw = self::message($c, $to, $subject, $text, $html, $options);
             $raw = preg_replace('/\r?\n/', "\r\n", $raw) ?? $raw;
             $raw = preg_replace('/(^|\r\n)\./', '$1..', $raw) ?? $raw;
             fwrite($socket, $raw . "\r\n.\r\n");
@@ -179,7 +181,7 @@ final class Mailer
         }
     }
 
-    private static function message(array $c, string $to, string $subject, string $text, string $html): string
+    private static function message(array $c, string $to, string $subject, string $text, string $html, array $options = []): string
     {
         $boundary = 'pcms_' . bin2hex(random_bytes(12));
         $fromName = self::headerText((string)$c['from_name']);
@@ -190,13 +192,23 @@ final class Mailer
 
         $headers = [
             'From: ' . ($fromName !== '' ? self::encodedHeader($fromName) . ' ' : '') . '<' . $fromEmail . '>',
+        ];
+
+        $replyToEmail = trim((string)($options['reply_to_email'] ?? ''));
+        if ($replyToEmail !== '') {
+            $replyToEmail = self::headerAddress($replyToEmail);
+            $replyToName = self::headerText((string)($options['reply_to_name'] ?? ''));
+            $headers[] = 'Reply-To: ' . ($replyToName !== '' ? self::encodedHeader($replyToName) . ' ' : '') . '<' . $replyToEmail . '>';
+        }
+
+        $headers = array_merge($headers, [
             'To: <' . $to . '>',
             'Subject: ' . $subject,
             'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
             'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $domain . '>',
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
-        ];
+        ]);
 
         $parts = [
             '--' . $boundary,
@@ -281,7 +293,7 @@ final class Mailer
 
     private static function headerText(string $value): string
     {
-        return trim(preg_replace('/[\r\n]+/', ' ', $value) ?? '');
+        return trim(preg_replace('/[\r\n\0]+/', ' ', $value) ?? '');
     }
 
     private static function headerAddress(string $value): string
@@ -297,6 +309,19 @@ final class Mailer
     {
         $value = self::headerText($value);
         return '=?UTF-8?B?' . base64_encode($value) . '?=';
+    }
+
+
+    private static function logSubject(string $subject, array $options): string
+    {
+        $value = self::headerText((string)($options['log_subject'] ?? $subject));
+        if ($value === '') $value = 'Message';
+        return self::slice($value, 255);
+    }
+
+    private static function slice(string $value, int $max): string
+    {
+        return function_exists('mb_substr') ? mb_substr($value, 0, $max) : substr($value, 0, $max);
     }
 
     private static function log(string $type, string $recipient, string $subject, string $status, ?string $error): void

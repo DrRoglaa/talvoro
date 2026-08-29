@@ -5,6 +5,8 @@ use CMS\Core\AdminPath;
 use CMS\Http\AdminSettingsController;
 use CMS\Http\Controllers;
 use CMS\Http\ContentSafetyController;
+use CMS\Http\ContactFormController;
+use CMS\Http\ContactAdminController;
 use CMS\Http\PageBuilderController;
 use CMS\Http\ContentModelController;
 use CMS\Http\CustomContentController;
@@ -21,6 +23,7 @@ $router->get('/health', [Controllers::class, 'health']);
 $router->get('/robots.txt', [Controllers::class, 'robots']);
 $router->get('/sitemap.xml', [Controllers::class, 'sitemap']);
 $router->get('/theme.css', [Controllers::class, 'themeCss']);
+$router->post('/_talvoro/contact', [ContactFormController::class, 'submit']);
 
 $admin = AdminPath::baseUrl();
 
@@ -185,6 +188,14 @@ $router->post($admin . '/themes/{id}/delete', [Controllers::class, 'deleteTheme'
 $router->get($admin . '/mail', [Controllers::class, 'mailSettings']);
 $router->post($admin . '/mail', [Controllers::class, 'updateMailSettings']);
 $router->post($admin . '/mail/test', [Controllers::class, 'testMail']);
+$router->post($admin . '/mail/contact', [ContactAdminController::class, 'updateSettings']);
+
+$router->get($admin . '/contact-submissions', [ContactAdminController::class, 'index']);
+$router->post($admin . '/contact-submissions/bulk-delete', [ContactAdminController::class, 'bulkDelete']);
+$router->post($admin . '/contact-submissions/cleanup', [ContactAdminController::class, 'cleanup']);
+$router->get($admin . '/contact-submissions/{id}', [ContactAdminController::class, 'show']);
+$router->post($admin . '/contact-submissions/{id}/status', [ContactAdminController::class, 'setStatus']);
+$router->post($admin . '/contact-submissions/{id}/delete', [ContactAdminController::class, 'delete']);
 
 $router->get($admin . '/users', [Controllers::class, 'users']);
 $router->post($admin . '/users', [Controllers::class, 'createUser']);

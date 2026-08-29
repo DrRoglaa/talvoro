@@ -28,7 +28,7 @@ try {
     $assert('Design settings validate without arbitrary CSS', $valid['errors'] === [] && $valid['values']['brand'] === '#2455aa' && !array_key_exists('css', $valid['values']));
 
     $invalid = DesignSystem::validate(['brand'=>'red;position:fixed','heading_font'=>'https://evil.invalid/font.woff2','content_width'=>'99999']);
-    $assert('Unsafe design values fail closed', count($invalid['errors']) >= 3 && $invalid['values']['brand'] === '#d66f5b' && $invalid['values']['heading_font'] === 'editorial');
+    $assert('Unsafe design values fail closed', count($invalid['errors']) >= 3 && $invalid['values']['brand'] === '#ff6b52' && $invalid['values']['heading_font'] === 'system');
 
     $lowContrast = DesignSystem::validate([
         'brand'=>'#eeeeee','accent'=>'#eeeeee','background'=>'#ffffff','surface'=>'#ffffff','text'=>'#eeeeee','muted'=>'#eeeeee','border'=>'#eeeeee',
