@@ -5,7 +5,7 @@ $byParent=[]; foreach ($items as $it) $byParent[(int)($it['parent_id']??0)][]=$i
 $renderTree=function(int $parent=0,int $depth=0) use (&$renderTree,&$byParent,$menuId): void {
   foreach ($byParent[$parent]??[] as $item) { ?>
     <article class="menu-item-card" style="--menu-depth:<?= min(4,$depth) ?>">
-      <div class="menu-item-main"><div><strong><?= e($item['label']) ?></strong><small><?= e(str_replace('_',' ',(string)$item['target_type'])) ?><?= (int)$item['is_enabled']===1?'':' · Hidden' ?></small></div></div>
+      <div class="menu-item-main"><div class="menu-item-summary"><strong><?= e($item['label']) ?></strong><small class="menu-item-type"><?= e(str_replace('_',' ',(string)$item['target_type'])) ?><?= (int)$item['is_enabled']===1?'':' · Hidden' ?></small></div></div>
       <details><summary>Edit</summary><form method="post" action="<?= e(admin_url('/menus/'.(int)$menuId.'/items/'.(int)$item['id'].'/edit')) ?>" class="menu-item-edit-form"><?= Csrf::field() ?>
         <div class="two-fields"><label>Label<input name="label" maxlength="120" required value="<?= e($item['label']) ?>"></label><label>Order<input type="number" name="sort_order" min="0" max="100000" value="<?= (int)$item['sort_order'] ?>"></label></div>
         <input type="hidden" name="target_type" value="<?= e($item['target_type']) ?>"><input type="hidden" name="target_id" value="<?= (int)($item['target_id']??0) ?>"><input type="hidden" name="target_model_id" value="<?= (int)($item['target_model_id']??0) ?>"><input type="hidden" name="custom_url" value="<?= e($item['custom_url']??'') ?>">
