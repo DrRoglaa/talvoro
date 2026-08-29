@@ -274,6 +274,23 @@ body.admin-body :where(.card,.panel,.metric,.content-row,.toggle-card,.settings-
 .overview-action-list a:first-child { border-top: 0; }
 .overview-action-list a:hover { color: var(--tv-coral); }
 
+/* Menu item summaries keep target metadata distinct from the editable label. */
+.menu-item-summary {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.menu-item-summary > strong { color: var(--tv-text); line-height: 1.35; }
+.menu-item-type {
+  color: var(--tv-muted);
+  font-size: .74rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
 .content-list { display: grid; gap: .65rem; }
 .content-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1rem; border: 1px solid rgba(83,65,52,.10); border-radius: 16px; color: #3b3430; text-decoration: none; }
 .content-row:hover { background: #fff7f3 !important; border-color: rgba(255,105,79,.22) !important; }
