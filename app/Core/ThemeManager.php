@@ -30,9 +30,10 @@ final class ThemeManager
     {
         try {
             return Database::connection()->query(
-                'SELECT id,name,slug,version,author,description,is_builtin,is_active,created_at,updated_at
+                "SELECT id,name,slug,version,author,description,is_builtin,is_active,created_at,updated_at
                  FROM themes
-                 ORDER BY is_active DESC,is_builtin DESC,name ASC'
+                 WHERE slug<>'trenlume-light'
+                 ORDER BY is_active DESC,is_builtin DESC,name ASC"
             )->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable) {
             return [];
@@ -43,7 +44,7 @@ final class ThemeManager
     {
         try {
             $row = Database::connection()->query(
-                'SELECT * FROM themes WHERE is_active=1 ORDER BY id LIMIT 1'
+                "SELECT * FROM themes WHERE is_active=1 AND slug<>'trenlume-light' ORDER BY id LIMIT 1"
             )->fetch(PDO::FETCH_ASSOC);
             if ($row) {
                 return $row;
@@ -53,11 +54,11 @@ final class ThemeManager
 
         return [
             'id' => 0,
-            'name' => 'Trenlume Light',
-            'slug' => 'trenlume-light',
+            'name' => 'Talvoro Editorial',
+            'slug' => 'talvoro-editorial',
             'version' => '1.0.0',
             'author' => 'Talvoro',
-            'description' => 'Warm ivory, coral accents and soft glass surfaces.',
+            'description' => 'Warm, light editorial publishing with calm typography and self-hosted ownership.',
             'css_text' => '',
             'is_builtin' => 1,
             'is_active' => 1,
@@ -225,9 +226,10 @@ final class ThemeManager
     public static function activate(int $id): void
     {
         $db = Database::connection();
-        $stmt = $db->prepare('SELECT id FROM themes WHERE id=? LIMIT 1');
+        $stmt = $db->prepare('SELECT id,slug FROM themes WHERE id=? LIMIT 1');
         $stmt->execute([$id]);
-        if (!$stmt->fetchColumn()) {
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row || (string)$row['slug'] === 'trenlume-light') {
             throw new RuntimeException('Theme not found.');
         }
 
@@ -257,10 +259,10 @@ final class ThemeManager
         }
 
         $builtin = Database::connection()->query(
-            'SELECT id FROM themes WHERE is_builtin=1 ORDER BY id LIMIT 1'
+            "SELECT id FROM themes WHERE is_builtin=1 AND slug<>'trenlume-light' ORDER BY CASE WHEN slug='talvoro-editorial' THEN 0 ELSE 1 END,id LIMIT 1"
         )->fetchColumn();
         if (!$builtin) {
-            throw new RuntimeException('Default Trenlume Light theme is missing.');
+            throw new RuntimeException('Default Talvoro Editorial theme is missing.');
         }
 
         self::activate((int)$builtin);
@@ -275,7 +277,7 @@ final class ThemeManager
             throw new RuntimeException('Theme not found.');
         }
         if ((int)$row['is_builtin'] === 1) {
-            throw new RuntimeException('Trenlume Light is the protected default theme.');
+            throw new RuntimeException('Built-in Talvoro themes are protected and cannot be deleted.');
         }
         if ((int)$row['is_active'] === 1) {
             throw new RuntimeException('Deactivate the theme before deleting it.');
@@ -492,6 +494,9 @@ final class ThemeManager
         }
         if (!preg_match('/^[a-z0-9][a-z0-9-]{1,119}$/', $slug)) {
             throw new RuntimeException('Theme slug can contain lowercase letters, numbers and hyphens.');
+        }
+        if ($slug === 'trenlume-light') {
+            throw new RuntimeException('The legacy Trenlume Light slug is reserved and cannot be used for custom themes.');
         }
         if (mb_strlen($version) > 40) {
             throw new RuntimeException('Theme version is too long.');

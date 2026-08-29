@@ -1,4 +1,7 @@
-<?php use CMS\Core\HomePage; use CMS\Core\PageBlocks; ?>
+<?php use CMS\Core\HomePage; use CMS\Core\PageBlocks;
+$variant = PageBlocks::sectionStyle($block)['style_variant'];
+$isAudiences = $variant === 'audiences';
+?>
 <section class="<?= e(PageBlocks::sectionClasses($block, 'home-editorial-section home-featured-section page-builder-cards')) ?>">
     <?php if (!empty($block['heading']) || !empty($block['eyebrow']) || (!empty($block['view_label']) && !empty($block['view_url']))): ?>
         <div class="home-section-heading">
@@ -14,10 +17,14 @@
             $image = HomePage::safeStoredAssetPath((string)($item['image_path'] ?? ''));
             $url = trim((string)($item['url'] ?? '')) ?: '#';
         ?>
-            <a class="home-featured-card tone-<?= (($index % 4) + 1) ?>" href="<?= e($url) ?>">
-                <figure class="home-featured-media<?= $image === '' ? ' is-placeholder' : '' ?>">
-                    <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($item['image_alt'] ?? '') ?>" loading="lazy" decoding="async"><?php else: ?><span class="home-card-placeholder-copy"><strong><?= e(str_pad((string)((int)$index + 1), 2, '0', STR_PAD_LEFT)) ?></strong><small>Add image</small></span><?php endif; ?>
-                </figure>
+            <a class="home-featured-card tone-<?= (($index % 4) + 1) ?><?= $isAudiences ? ' audience-card' : '' ?>" href="<?= e($url) ?>">
+                <?php if ($isAudiences): ?>
+                    <span class="audience-card-index" aria-hidden="true"><?= e(str_pad((string)((int)$index + 1), 2, '0', STR_PAD_LEFT)) ?></span>
+                <?php else: ?>
+                    <figure class="home-featured-media<?= $image === '' ? ' is-placeholder' : '' ?>">
+                        <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($item['image_alt'] ?? '') ?>" loading="lazy" decoding="async"><?php else: ?><span class="home-card-placeholder-copy"><strong><?= e(str_pad((string)((int)$index + 1), 2, '0', STR_PAD_LEFT)) ?></strong><small>Add image</small></span><?php endif; ?>
+                    </figure>
+                <?php endif; ?>
                 <div class="home-featured-caption"><strong><?= e($item['title'] ?? '') ?></strong><span><?= e($item['meta'] ?? '') ?></span></div>
             </a>
         <?php endforeach; ?>

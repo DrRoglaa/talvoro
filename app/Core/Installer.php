@@ -228,7 +228,7 @@ final class Installer
                 $adminId = (int)$pdo->lastInsertId();
 
                 Settings::set('site.mode', 'live', $adminId);
-                Settings::set('frontend.theme', 'trenlume-light', $adminId);
+                Settings::set('frontend.theme', 'talvoro-editorial', $adminId);
                 Settings::set('blog.enabled', '1', $adminId);
                 Settings::set('mail.from_name', $name, $adminId);
 

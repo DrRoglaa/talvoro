@@ -10,7 +10,7 @@ final class Pages
 {
     private const RESERVED = [
         '/health','/blog','/assets','/uploads','/install',
-        '/robots.txt','/sitemap.xml','/theme.css','/account'
+        '/robots.txt','/sitemap.xml','/theme.css','/account','/_talvoro'
     ];
 
     public static function adminList(string $search = '', string $status = '', bool $trashed = false): array

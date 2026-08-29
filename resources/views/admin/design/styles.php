@@ -14,9 +14,9 @@
   <div class="design-styles-layout">
     <div class="stack">
       <section class="card">
-        <div class="section-heading"><div><p class="eyebrow">Foundation</p><h2>Colors</h2><p class="muted">Choose semantic colors. Talvoro uses them consistently instead of storing arbitrary CSS in content.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">Foundation</p><h2>Colors</h2><p class="muted">Set the theme's editorial accents and neutral foundation. Brand accents are visual identity; success, warning and destructive states remain separate Talvoro system colors.</p></div></div>
         <div class="design-color-grid">
-          <?php foreach (['brand','accent','background','surface','text','muted','border'] as $key): $def=$definitions[$key]; ?>
+          <?php foreach (['brand','accent','depth','background','surface','text','muted','border'] as $key): $def=$definitions[$key]; ?>
             <label class="design-color-field"><span><?= e($def['label']) ?></span><span class="design-color-control"><input type="color" name="<?= e($key) ?>" value="<?= e($values[$key]) ?>" data-design-token="<?= e($key) ?>"><code data-color-value><?= e($values[$key]) ?></code></span></label>
           <?php endforeach; ?>
         </div>

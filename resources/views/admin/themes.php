@@ -2,20 +2,20 @@
     <div>
         <p class="eyebrow">Appearance</p>
         <h1>Frontend themes</h1>
-        <p class="muted">Keep Trenlume Light as the protected default, or create/import a custom theme with CSS and local image assets.</p>
+        <p class="muted">Talvoro Editorial is the protected default. Create or import a custom theme with CSS and local image assets when you want a different frontend look.</p>
     </div>
 </header>
 
 <?php if ($created): ?><div class="notice success">Theme created.</div><?php endif; ?>
 <?php if ($imported): ?><div class="notice success">Theme imported.</div><?php endif; ?>
 <?php if ($activated): ?><div class="notice success">Frontend theme activated.</div><?php endif; ?>
-<?php if ($deactivated): ?><div class="notice success">Custom theme deactivated. Trenlume Light is active again.</div><?php endif; ?>
+<?php if ($deactivated): ?><div class="notice success">Custom theme deactivated. Talvoro Editorial is active again.</div><?php endif; ?>
 <?php if ($deleted): ?><div class="notice success">Theme deleted.</div><?php endif; ?>
 
 <div class="theme-library-grid">
     <?php foreach ($themes as $theme): ?>
         <article class="theme-library-card <?= (int)$theme['is_active'] === 1 ? 'selected' : '' ?>">
-            <div class="theme-preview <?= (int)$theme['is_builtin'] === 1 ? 'theme-preview-trenlume' : 'theme-preview-custom' ?>">
+            <div class="theme-preview <?= (int)$theme['is_builtin'] === 1 ? 'theme-preview-editorial' : 'theme-preview-custom' ?>">
                 <span></span><span></span><span></span>
             </div>
             <div class="theme-card-head">

@@ -16,7 +16,7 @@ final class ContentModels
 {
     private const RESERVED_SLUGS = [
         'admin','login','api','install','assets','uploads','blog','pages','posts','media','system','security','themes',
-        'health','robots.txt','sitemap.xml','theme.css','account','content'
+        'health','robots.txt','sitemap.xml','theme.css','account','content','_talvoro'
     ];
 
     private const RESERVED_KEYS = [
