@@ -1,5 +1,6 @@
 .env
 /vendor/
+/docs/superpowers/
 .DS_Store
 /storage/logs/*
 !/storage/logs/.gitkeep
