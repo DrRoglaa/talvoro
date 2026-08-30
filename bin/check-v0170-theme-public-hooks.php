@@ -26,5 +26,5 @@ $checks=[
 ];
 $failed=[];
 foreach($checks as $name=>$ok){echo ($ok?'[OK]   ':'[FAIL] ').$name.PHP_EOL;if(!$ok)$failed[]=$name;}
-if($failed){fwrite(STDERR,PHP_EOL.'Talvoro 0.17.0 public theme hook checks failed: '.implode(', ',$failed).PHP_EOL);exit(1);} 
+if($failed){fwrite(STDERR,PHP_EOL.'Talvoro 0.17.0 public theme hook checks failed: '.implode(', ',$failed).PHP_EOL);exit(1);}
 echo PHP_EOL.'Talvoro 0.17.0 public theme hook checks passed.'.PHP_EOL;

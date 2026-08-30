@@ -89,5 +89,5 @@ $assert('Delete Demo Data is documented as ownership-safe starter removal', str_
 
 $failed=array_keys(array_filter($checks,static fn(bool $ok):bool=>!$ok));
 foreach($checks as $name=>$ok) echo ($ok?'[OK]   ':'[FAIL] ').$name.PHP_EOL;
-if($failed){fwrite(STDERR,PHP_EOL.'Talvoro 0.17.0 starter lifecycle checks failed: '.implode(', ',$failed).PHP_EOL);exit(1);} 
+if($failed){fwrite(STDERR,PHP_EOL.'Talvoro 0.17.0 starter lifecycle checks failed: '.implode(', ',$failed).PHP_EOL);exit(1);}
 echo PHP_EOL.'Talvoro 0.17.0 starter lifecycle checks passed.'.PHP_EOL;
