@@ -3,6 +3,8 @@ use CMS\Core\ContentModels;
 use CMS\Core\CustomContent;
 use CMS\Core\MediaLibrary;
 $values=is_array($entry['values']??null)?$entry['values']:[];
+$modelKey=ContentModels::fieldKey((string)($model['model_key']??''));
+if($modelKey==='') $modelKey='content';
 $responsiveImage=static function(int $mediaId,string $class=''): string {
     $data=MediaLibrary::responsive($mediaId); if(!$data) return '';
     $byMime=[]; foreach($data['sources']??[] as $source) $byMime[(string)$source['mime']][]=$source;
@@ -27,8 +29,8 @@ $renderPublic=static function(array $field,mixed $value) use (&$renderPublic,$en
     return e((string)$value);
 };
 ?>
-<article class="structured-public-entry">
+<article class="structured-public-entry model-<?= e($modelKey) ?>" data-model-key="<?= e($modelKey) ?>">
 <header class="structured-public-header"><a class="back-link" href="<?= (int)$model['has_archive']===1 ? '/'.e($model['slug']) : '/' ?>">← <?= (int)$model['has_archive']===1 ? e($model['plural_name']) : 'Home' ?></a><p class="eyebrow"><?= e($model['singular_name']) ?></p><h1><?= e($entry['title']) ?></h1><?php $featuredHtml=(int)($entry['featured_media_id']??0)>0?$responsiveImage((int)$entry['featured_media_id'],'structured-featured-picture'):''; if ($featuredHtml!==''): ?><figure class="structured-featured-image"><?= $featuredHtml ?></figure><?php endif; ?></header>
-<div class="structured-public-fields"><?php foreach ($fields as $field): $rendered=$renderPublic($field,$values[$field['field_key']]??null); if ($rendered==='') continue; ?><section class="structured-public-field structured-public-field-<?= e($field['field_type']) ?>"><h2><?= e($field['label']) ?></h2><div><?= $rendered ?></div></section><?php endforeach; ?></div>
+<div class="structured-public-fields"><?php foreach ($fields as $field): $rendered=$renderPublic($field,$values[$field['field_key']]??null); if ($rendered==='') continue; $fieldKey=ContentModels::fieldKey((string)($field['field_key']??'')); ?><section class="structured-public-field structured-public-field-<?= e($field['field_type']) ?><?= $fieldKey!=='' ? ' field-'.e($fieldKey) : '' ?>"<?= $fieldKey!=='' ? ' data-field-key="'.e($fieldKey).'"' : '' ?>><h2><?= e($field['label']) ?></h2><div><?= $rendered ?></div></section><?php endforeach; ?></div>
 <?php if ($relatedTo): ?><section class="structured-related"><p class="eyebrow">Connected content</p><h2>Related stories and entries</h2><div class="content-archive-grid"><?php foreach ($relatedTo as $related): ?><?php if ($related['status']!=='published' || (int)($related['is_public']??0)!==1 || (int)($related['has_urls']??0)!==1) continue; ?><article class="content-archive-card"><small><?= e($related['singular_name']) ?></small><h3><a href="/<?= e($related['model_slug']) ?>/<?= e($related['slug']) ?>"><?= e($related['title']) ?></a></h3></article><?php endforeach; ?></div></section><?php endif; ?>
 </article>

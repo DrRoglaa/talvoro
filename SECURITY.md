@@ -158,6 +158,18 @@ All deployment distributions are generated from that same tagged source.
 > [!CAUTION]
 > If the tag, version, checksum, signature, provenance, or release asset set does not match, do not install the release until the discrepancy is resolved.
 
+## Imported theme and Starter Site security
+
+Talvoro imported themes are intentionally constrained packages. A theme may provide CSS, validated local image assets, and—starting with Talvoro 0.17.0—an optional declarative `starter/starter.json`.
+
+A Starter Site is data, not executable code. Theme packages cannot use Starter Sites to run PHP, JavaScript, shell commands, SQL, arbitrary filesystem writes, unrestricted local file imports, or remote asset downloads. Talvoro core validates the complete starter definition before installation and performs all database/media operations through registered CMS resource adapters.
+
+Starter packages reject path traversal, unsafe/remote media paths, unsupported files, duplicate resource keys, malformed or oversized JSON, unsupported resource types/fields, invalid or cyclic references, and other schema violations. Starter media is re-verified against its import-time SHA-256 before it is copied into the Media Library.
+
+Starter Site install, repair, and **Delete Demo Data** require `starter_sites.manage`, authentication, authorization, CSRF protection, and POST requests. Theme import and activation never install content automatically. Delete Demo Data operates only on ownership records created by a Starter Site installation and preserves modified or unrelated user content when safe deletion cannot be proven.
+
+See **[Theme Starter Sites](docs/THEME-STARTER-SITES.md)** for the full declarative package contract and limits.
+
 ## Repository secrets
 
 The Talvoro repository must never contain:

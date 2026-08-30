@@ -379,7 +379,7 @@ $navIcon = static function (string $name): string {
                     <?php if ($publicLogo !== ''): ?><span class="public-logo"><img src="<?= e($publicLogo) ?>" alt=""></span><?php else: ?><span class="brand-mark small" aria-hidden="true"><span></span></span><?php endif; ?>
                     <span class="public-brand-copy"><strong><?= e($siteName) ?></strong><?php if ($publicTagline !== ''): ?><small><?= e($publicTagline) ?></small><?php endif; ?></span>
                 </a>
-                <p>Thoughtful, independent publishing with your content and your data under your control.</p>
+                <p><?= e(Settings::publicFooterText()) ?></p>
             </div>
             <div class="public-footer-column">
                 <strong>Menu</strong>
@@ -400,8 +400,13 @@ $navIcon = static function (string $name): string {
         </div>
         <?php endif; ?>
         <div class="public-footer-bottom">
-            <span>Independent software, built with <span aria-label="heart">♥</span> by Indie developer (David Rok Roglič) in Slovenia.</span>
-            <span>Talvoro version: <?= e(app_version()) ?></span>
+            <?php if ($isTalvoroProductSite): ?>
+            <span><?= e(Settings::publicFooterNote($siteName, 'Independent software, built with ♥ by Indie developer (David Rok Roglič) in Slovenia.')) ?></span>
+            <span>Proudly built with <a href="https://github.com/DrRoglaa/talvoro" target="_blank" rel="noopener noreferrer">Talvoro</a> v: <?= e(app_version()) ?></span>
+            <?php else: ?>
+            <span><?= e(Settings::publicFooterNote($siteName)) ?></span>
+            <span>Powered by Talvoro</span>
+            <?php endif; ?>
         </div>
     </footer>
 </div>

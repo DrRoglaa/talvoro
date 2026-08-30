@@ -1,4 +1,4 @@
-<header class="page-header">
+<header class="page-header" id="theme-library">
     <div>
         <p class="eyebrow">Appearance</p>
         <h1>Frontend themes</h1>
@@ -40,6 +40,29 @@
                     <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/delete"><?= CMS\Core\Csrf::field() ?><button class="link-button danger-text" type="submit">Delete</button></form>
                 <?php endif; ?>
             </div>
+
+            <?php if (!empty($theme['starterDefinition'])): ?>
+                <?php
+                    $starterCode = (string)($theme['starterState']['code'] ?? 'not_installed');
+                    $starterLabel = match ($starterCode) {
+                        'installed' => 'Starter Site installed',
+                        'modified' => 'Starter Site installed · modified',
+                        'repair_available' => 'Starter Site · repair available',
+                        'needs_attention' => 'Starter Site · needs attention',
+                        'starter_update_available' => 'Starter Site update available',
+                        default => 'Starter Site Available',
+                    };
+                ?>
+                <div class="starter-theme-summary">
+                    <strong><?= e($starterLabel) ?></strong>
+                    <small><?= e((string)$theme['starterDefinition']['name']) ?> · v<?= e((string)$theme['starterDefinition']['starter_version']) ?></small>
+                    <?php if (CMS\Core\Gate::allows('starter_sites.manage')): ?>
+                        <a class="text-link" href="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/starter">Review Starter Site</a>
+                    <?php else: ?>
+                        <span class="muted">Starter Site actions require <code>starter_sites.manage</code> (Super Administrator by default).</span>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </article>
     <?php endforeach; ?>
 </div>
@@ -66,9 +89,9 @@
     <section class="card">
         <div class="section-heading"><div><p class="eyebrow">Import</p><h2>Theme package</h2></div></div>
         <?php if (CMS\Core\Gate::allows('themes.import')): ?>
-            <p class="muted">Import a ZIP with <code>theme.json</code>, <code>style.css</code> and optional images inside <code>assets/</code>. The package may be at the ZIP root or inside one top-level folder.</p>
-            <p class="muted">Maximum <?= (int)$importLimits['package_mb'] ?> MB compressed, <?= (int)$importLimits['expanded_mb'] ?> MB expanded and <?= (int)$importLimits['files'] ?> files. Allowed images: <?= e(implode(', ', array_map(static fn(string $ext): string => '.' . $ext, $importLimits['extensions']))) ?>. PHP, JavaScript, SVG and executable files are rejected.</p>
-            <form method="post" action="<?= e(admin_url()) ?>/themes/import" enctype="multipart/form-data" class="stack">
+            <p class="muted">Import a ZIP with <code>theme.json</code>, <code>style.css</code> and optional images inside <code>assets/</code>. A professional theme may also include declarative Starter Site data at <code>starter/starter.json</code>. Importing or activating a theme never installs that content automatically.</p>
+            <p class="muted">Maximum <?= (int)$importLimits['package_mb'] ?> MB compressed, <?= (int)$importLimits['expanded_mb'] ?> MB expanded and <?= (int)$importLimits['files'] ?> files. Starter manifests are limited to <?= (int)$importLimits['starter_kib'] ?> KiB and <?= (int)$importLimits['starter_resources'] ?> resources. Allowed images: <?= e(implode(', ', array_map(static fn(string $ext): string => '.' . $ext, $importLimits['extensions']))) ?>. PHP, JavaScript, SVG and executable files are rejected.</p>
+            <form method="post" action="<?= e(admin_url()) ?>/themes/import" enctype="multipart/form-data" class="stack" data-no-scroll-restore>
                 <?= CMS\Core\Csrf::field() ?>
                 <input type="hidden" name="MAX_FILE_SIZE" value="<?= (int)$importLimits['package_mb'] * 1024 * 1024 ?>">
                 <label>Theme ZIP<input type="file" name="theme_zip" accept=".zip,application/zip" required></label>
@@ -90,7 +113,9 @@
   style.css
   assets/
     hero.webp
-    logo.png</pre>
+    logo.png
+  starter/
+    starter.json</pre>
                 <p class="muted">Reference packaged images from CSS with relative URLs such as <code>url("assets/hero.webp")</code>. Talvoro rewrites them to the theme's isolated public asset path during import.</p>
             </div>
         <?php else: ?>

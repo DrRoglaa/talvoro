@@ -3,8 +3,8 @@ use CMS\Core\HomePage;
 use CMS\Core\PageBlocks;
 $image = HomePage::safeStoredAssetPath((string)($block['image_path'] ?? ''));
 ?>
-<section class="<?= e(PageBlocks::sectionClasses($block, 'spottina-home-hero page-builder-hero' . ($image !== '' ? ' has-media' : ''))) ?>">
-    <div class="spottina-home-hero-copy">
+<section class="<?= e(PageBlocks::sectionClasses($block, 'spottina-home-hero talvoro-page-hero page-builder-hero' . ($image !== '' ? ' has-media' : ''))) ?>">
+    <div class="spottina-home-hero-copy talvoro-page-hero-copy">
         <?php if (trim((string)($block['eyebrow'] ?? '')) !== ''): ?><p class="home-kicker">♡ <?= e($block['eyebrow']) ?></p><?php endif; ?>
         <?php if (($page['path'] ?? '') === '/' || !empty($page['_leading_hero'])): ?><h1 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h1><?php else: ?><h2 class="page-builder-hero-title"><?= HomePage::accentHeadingHtml((string)($block['heading'] ?? '')) ?></h2><?php endif; ?>
         <?php if (trim((string)($block['intro'] ?? '')) !== ''): ?><p class="home-hero-intro"><?= e($block['intro']) ?></p><?php endif; ?>
@@ -15,7 +15,7 @@ $image = HomePage::safeStoredAssetPath((string)($block['image_path'] ?? ''));
             </div>
         <?php endif; ?>
     </div>
-    <figure class="spottina-home-hero-media<?= $image === '' ? ' is-placeholder' : '' ?>">
+    <figure class="spottina-home-hero-media talvoro-page-hero-media<?= $image === '' ? ' is-placeholder' : '' ?>">
         <?php if ($image !== ''): ?><img src="<?= e($image) ?>" alt="<?= e($block['image_alt'] ?? '') ?>" loading="<?= (($page['path'] ?? '') === '/') ? 'eager' : 'lazy' ?>" decoding="async"><?php else: ?><span class="home-media-placeholder-copy"><small>Hero image</small><strong>Make this space yours</strong><em>Add an image in the page editor</em></span><?php endif; ?>
     </figure>
 </section>

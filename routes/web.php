@@ -13,6 +13,7 @@ use CMS\Http\CustomContentController;
 use CMS\Http\MenusController;
 use CMS\Http\MediaController;
 use CMS\Http\DesignController;
+use CMS\Http\StarterSiteController;
 use CMS\Core\ContentModels;
 
 $router->get('/', [Controllers::class, 'home']);
@@ -184,6 +185,10 @@ $router->post($admin . '/themes/import', [Controllers::class, 'importTheme']);
 $router->post($admin . '/themes/{id}/activate', [Controllers::class, 'activateTheme']);
 $router->post($admin . '/themes/{id}/deactivate', [Controllers::class, 'deactivateTheme']);
 $router->post($admin . '/themes/{id}/delete', [Controllers::class, 'deleteTheme']);
+$router->get($admin . '/themes/{id}/starter', [StarterSiteController::class, 'review']);
+$router->post($admin . '/themes/{id}/starter/install', [StarterSiteController::class, 'install']);
+$router->post($admin . '/themes/{id}/starter/repair', [StarterSiteController::class, 'repair']);
+$router->post($admin . '/themes/{id}/starter/delete-demo-data', [StarterSiteController::class, 'deleteDemoData']);
 
 $router->get($admin . '/mail', [Controllers::class, 'mailSettings']);
 $router->post($admin . '/mail', [Controllers::class, 'updateMailSettings']);

@@ -39,6 +39,7 @@ Talvoro is built around a straightforward idea: **your website and your data sho
 | **Simple administration** | A clean, modern interface without unnecessary operational complexity. |
 | **Predictable maintenance** | Backups, upgrades, release packaging, and verification are treated as first-class workflows. |
 | **Verifiable releases** | Official packages are built from signed version tags and protected by checksums, Sigstore signatures, and provenance attestations. |
+| **Theme Starter Sites** | Safe imported themes can optionally provide declarative, review-before-install demo content without executable theme code. See [Theme Starter Sites](docs/THEME-STARTER-SITES.md). |
 
 ## Get started
 

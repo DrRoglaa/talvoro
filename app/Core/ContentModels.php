@@ -173,7 +173,7 @@ final class ContentModels
         if ($slug === '' || strlen($slug) > 100) $errors[] = 'Choose a short URL base using letters, numbers and hyphens.';
         if ($slug !== '' && self::slugIsReserved($slug, $existingId)) $errors[] = 'That URL base is reserved or already in use.';
         if ($modelKey === '' || !preg_match('/^[a-z][a-z0-9_]{0,99}$/', $modelKey)) $errors[] = 'The internal key must start with a letter and use only lowercase letters, numbers and underscores.';
-        if (in_array($modelKey, self::RESERVED_KEYS, true)) $errors[] = 'That internal key is reserved by Talvoro.';
+        if (self::keyIsReserved($modelKey)) $errors[] = 'That internal key is reserved by Talvoro.';
         if ($modelKey !== '') {
             $sql = 'SELECT id FROM content_models WHERE LOWER(model_key)=LOWER(?)' . ($existingId ? ' AND id<>?' : '') . ' LIMIT 1';
             $stmt = Database::connection()->prepare($sql); $args = [$modelKey]; if ($existingId) $args[] = $existingId; $stmt->execute($args);
@@ -309,7 +309,7 @@ final class ContentModels
         if ($label === '') $errors[] = 'Field label is required.';
         if ($key === '') $errors[] = 'Field key could not be generated.';
         if ($key !== '' && !preg_match('/^[a-z][a-z0-9_]{0,99}$/', $key)) $errors[] = 'The field key must start with a letter and use only lowercase letters, numbers and underscores.';
-        if (in_array($key, self::RESERVED_KEYS, true)) $errors[] = 'That field key is reserved by Talvoro.';
+        if (self::keyIsReserved($key)) $errors[] = 'That field key is reserved by Talvoro.';
         if (!isset(self::fieldTypes()[$type])) $errors[] = 'Choose a supported field type.';
         if ($existing && (string)$existing['field_type'] !== $type && self::entryCount($modelId, false) > 0) {
             $errors[] = 'Field type cannot be changed after entries exist. Create a new field instead to protect existing data.';
@@ -514,7 +514,7 @@ final class ContentModels
         if ($label === '') $errors[] = 'Field label is required.';
         if ($key === '') $errors[] = 'Field key could not be generated.';
         if ($key !== '' && !preg_match('/^[a-z][a-z0-9_]{0,99}$/', $key)) $errors[] = 'The field key must start with a letter and use only lowercase letters, numbers and underscores.';
-        if (in_array($key, self::RESERVED_KEYS, true)) $errors[] = 'That field key is reserved by Talvoro.';
+        if (self::keyIsReserved($key)) $errors[] = 'That field key is reserved by Talvoro.';
         if (!isset($componentAllowed[$type])) $errors[] = 'Choose a supported component field type.';
         if ($existing && (string)$existing['field_type'] !== $type && self::componentInUse($componentId)) {
             $errors[] = 'Field type cannot be changed while this component is used by a content model. Create a new field instead to protect saved content.';
@@ -615,6 +615,12 @@ final class ContentModels
         $value = self::slug($value);
         $value = str_replace('-', '_', $value);
         return mb_substr($value, 0, 100);
+    }
+
+    public static function keyIsReserved(string $value): bool
+    {
+        $key = self::fieldKey($value);
+        return $key !== '' && in_array($key, self::RESERVED_KEYS, true);
     }
 
     public static function slug(string $value): string

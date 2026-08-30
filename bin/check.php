@@ -81,6 +81,7 @@ $checks['Structured content migrations present'] = is_file(base_path('database/m
 $checks['Menus Media SEO 2.0 migration present'] = is_file(base_path('database/migrations/018_menus_media_seo2.sql'));
 $checks['Design System migration present'] = is_file(base_path('database/migrations/019_design_system.sql'));
 $checks['Contact Forms migration present'] = is_file(base_path('database/migrations/022_contact_forms.sql'));
+$checks['Theme Starter Sites migration present'] = is_file(base_path('database/migrations/027_theme_starter_sites.sql'));
 $checks['Contact Forms regression check available'] = is_file(base_path('bin/check-contact-forms.php'));
 $checks['Contact Forms services available'] = class_exists(ContactFormContext::class)
     && class_exists(ContactSettings::class)
@@ -105,6 +106,12 @@ $checks['v0.14.5 compatibility check available'] = is_file(base_path('bin/check-
 $checks['v0.14.6 regression check available'] = is_file(base_path('bin/check-v0146.php'));
 $checks['v0.14.7 deployment check available'] = is_file(base_path('bin/check-v0147.php'));
 $checks['v0.15.0 design check available'] = is_file(base_path('bin/check-v0150.php'));
+$checks['v0.17.0 starter manifest check available'] = is_file(base_path('bin/check-v0170-starter-manifest.php'));
+$checks['v0.17.0 starter engine check available'] = is_file(base_path('bin/check-v0170-starter-engine.php'));
+$checks['v0.17.0 starter lifecycle check available'] = is_file(base_path('bin/check-v0170-starter-lifecycle.php'));
+$checks['v0.17.0 starter HTTP check available'] = is_file(base_path('bin/check-v0170-starter-http.php'));
+$checks['v0.17.0 theme public hooks check available'] = is_file(base_path('bin/check-v0170-theme-public-hooks.php'));
+$checks['v0.17.0 release check available'] = is_file(base_path('bin/check-v0170-release.php'));
 $checks['Starter content models available'] = class_exists(ContentModelStarters::class) && count(ContentModelStarters::catalog()) >= 15;
 $checks['Starter page patterns available'] = class_exists(PagePatternStarters::class) && count(PagePatternStarters::catalog()) >= 32;
 $checks['Starter library search script present'] = is_file(base_path('public/assets/js/starter-library.js'));
@@ -120,6 +127,10 @@ $checks['Talvoro 01d typography migration available'] = is_file(base_path('datab
 
 $starterCss=(string)@file_get_contents(base_path('public/assets/css/app.css'));
 $checks['Structured model toggle cards styled'] = str_contains($starterCss,'.toggle-card') && str_contains($starterCss,'.toggle-grid') && str_contains($starterCss,'grid-template-columns: 20px minmax(0, 1fr)');
+$customContentIndexSource=(string)@file_get_contents(base_path('resources/views/admin/custom-content/index.php'));
+$checks['Trash row actions stay inside admin cards'] = str_contains($starterCss,'.post-row.trash-row{grid-template-columns:minmax(0,1fr) minmax(300px,420px)}')
+    && str_contains($starterCss,'@media (max-width:1200px){.post-row.trash-row{grid-template-columns:1fr}')
+    && str_contains($customContentIndexSource, "post-row<?= \$trashed ? ' trash-row' : '' ?>");
 $checks['Structured content editor scripts present'] = is_file(base_path('public/assets/js/structured-content.js'))
     && is_file(base_path('public/assets/js/schema-fields.js'))
     && is_file(base_path('public/assets/js/schema-sortable.js'));
@@ -246,6 +257,9 @@ try {
         'media_folders',
         'media_variants',
         'contact_submissions',
+        'theme_starter_definitions',
+        'starter_site_installations',
+        'starter_site_resources',
     ];
 
     foreach ($required as $table) {
@@ -387,6 +401,10 @@ try {
         $checks['Design manage permission exists'] = (int)$db->query("SELECT COUNT(*) FROM permissions WHERE name='design.manage'")->fetchColumn() === 1;
 $checks['Security manage permission exists'] = (int)$db->query("SELECT COUNT(*) FROM permissions WHERE name='security.manage'")->fetchColumn() === 1;
     $checks['Super Administrator has security permission'] = (int)$db->query("SELECT COUNT(*) FROM role_permissions rp JOIN roles r ON r.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id WHERE r.name='super_administrator' AND p.name='security.manage'")->fetchColumn() === 1;
+
+    $checks['Starter Site manage permission exists'] = (int)$db->query("SELECT COUNT(*) FROM permissions WHERE name='starter_sites.manage'")->fetchColumn() === 1;
+    $checks['Super Administrator has Starter Site permission'] = (int)$db->query("SELECT COUNT(*) FROM role_permissions rp JOIN roles r ON r.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id WHERE r.name='super_administrator' AND p.name='starter_sites.manage'")->fetchColumn() === 1;
+    $checks['Administrator is not granted Starter Site permission by default'] = (int)$db->query("SELECT COUNT(*) FROM role_permissions rp JOIN roles r ON r.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id WHERE r.name='administrator' AND p.name='starter_sites.manage'")->fetchColumn() === 0;
 
     if ($checks['Table themes']) {
         $activeThemes = (int)$db->query('SELECT COUNT(*) FROM themes WHERE is_active=1')->fetchColumn();

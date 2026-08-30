@@ -2314,7 +2314,7 @@ td strong { color: var(--text); }
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: auto;
+    margin-top: 4px;
 }
 .theme-preview-custom {
     background: linear-gradient(140deg,#fff,#f2ece6);
@@ -4474,3 +4474,8 @@ html:has(.talvoro-builder-preview-body) { background:#fff; }
   .contact-submission-row .contact-submission-meta,.contact-submission-row .contact-submission-subject,.contact-submission-row .contact-submission-source { grid-column:2; justify-content:flex-start; }
   .contact-bulk-bar { align-items:stretch; flex-direction:column; }
 }
+
+/* v0.17.0: keep Trash metadata and destructive actions inside content rows. */
+.post-row.trash-row{grid-template-columns:minmax(0,1fr) minmax(300px,420px)}
+.trash-row .trash-actions{min-width:0;width:100%;max-width:420px;justify-self:end}
+@media (max-width:1200px){.post-row.trash-row{grid-template-columns:1fr}.trash-row .trash-actions{max-width:none;justify-self:stretch;justify-content:flex-start}.trash-row .trash-actions small{text-align:left}}

@@ -129,7 +129,7 @@ $fieldAttrs = static function (string $name) use ($fieldErrors, $formId): string
 
                     <div class="contact-form-footer">
                         <button class="button contact-submit" type="submit"><?= e((string)($block['submit_label'] ?? 'Send message')) ?></button>
-                        <p class="contact-privacy-note">Your details are used only to respond to this message. Talvoro does not require a third-party form service.</p>
+                        <p class="contact-privacy-note">Your details are used only to process and respond to this message.</p>
                     </div>
                 </form>
             <?php endif; ?>
