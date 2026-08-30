@@ -104,6 +104,11 @@
     if (form instanceof HTMLFormElement) storeReturnPosition(form);
   }, true);
 
+  if (window.location.hash) {
+    clearState();
+    return;
+  }
+
   const state = readState();
   if (!state) return;
 

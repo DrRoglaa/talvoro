@@ -1,4 +1,5 @@
 <?php
+use CMS\Core\Settings;
 $items = $listing['items'];
 $isCategoryArchive = isset($category) && is_array($category);
 $archiveBase = $isCategoryArchive ? '/blog/category/' . rawurlencode((string)$category['slug']) : '/blog';
@@ -10,8 +11,8 @@ $archiveBase = $isCategoryArchive ? '/blog/category/' . rawurlencode((string)$ca
         <p><?= e($category['description'] ?: 'Published stories in this category.') ?></p>
         <a class="back-link" href="/blog">&larr; All blog posts</a>
     <?php else: ?>
-        <h1>Thoughts, updates<br>and useful things.</h1>
-        <p>A simple publishing space with no ad network, no third-party tracker and no unnecessary noise.</p>
+        <h1><?= e(Settings::blogArchiveTitle()) ?></h1>
+        <?php if (Settings::blogArchiveIntro() !== ''): ?><p><?= e(Settings::blogArchiveIntro()) ?></p><?php endif; ?>
     <?php endif; ?>
 </section>
 

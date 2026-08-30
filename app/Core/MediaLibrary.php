@@ -53,6 +53,59 @@ final class MediaLibrary
         } catch (\Throwable $e) { SiteAssets::remove($path); throw $e; }
     }
 
+    public static function importVerifiedThemeAsset(
+        string $themeAssetRoot,
+        string $relativePath,
+        string $expectedSha256,
+        int $userId,
+        string $altText = '',
+        string $title = '',
+        string $caption = '',
+        float $focalX = 50,
+        float $focalY = 50
+    ): int {
+        $root=realpath($themeAssetRoot);
+        if ($root===false || !is_dir($root)) throw new RuntimeException('Verified theme asset root is missing.');
+        $relativePath=trim($relativePath);
+        if (!str_starts_with($relativePath,'assets/') || str_contains($relativePath,"\0") || str_contains($relativePath,'\\')) throw new RuntimeException('Starter media path is invalid.');
+        foreach (explode('/',$relativePath) as $part) if ($part==='' || $part==='.' || $part==='..' || preg_match('/^[A-Za-z0-9._-]+$/D',$part)!==1) throw new RuntimeException('Starter media path is invalid.');
+        if (preg_match('/^[a-f0-9]{64}$/D',$expectedSha256)!==1) throw new RuntimeException('Starter media checksum is invalid.');
+        $source=realpath($root.'/'.$relativePath);
+        if ($source===false || !is_file($source) || !str_starts_with($source,$root.DIRECTORY_SEPARATOR)) throw new RuntimeException('Starter media file is missing or outside the installed theme.');
+        $actual=hash_file('sha256',$source);
+        if (!is_string($actual) || !hash_equals($expectedSha256,$actual)) throw new RuntimeException('Starter media file no longer matches the validated theme package.');
+        $size=(int)filesize($source);
+        if ($size<1 || $size>12*1024*1024) throw new RuntimeException('Starter media must be 12 MB or smaller.');
+        $ext=strtolower((string)pathinfo($source,PATHINFO_EXTENSION));
+        if (!in_array($ext,['jpg','jpeg','png','webp'],true)) throw new RuntimeException('Starter Media supports JPEG, PNG or WebP images only.');
+        $finfo=new \finfo(FILEINFO_MIME_TYPE); $mime=strtolower((string)$finfo->file($source));
+        $allowed=['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','webp'=>'image/webp'];
+        if (($allowed[$ext]??'')!==$mime) throw new RuntimeException('Starter media content does not match its extension.');
+        $image=@getimagesize($source);
+        if (!is_array($image) || empty($image[0]) || empty($image[1])) throw new RuntimeException('Starter media is not a readable image.');
+        $width=(int)$image[0]; $height=(int)$image[1];
+        if ($width>16000 || $height>16000 || ($width*$height)>60000000) throw new RuntimeException('Starter media dimensions are too large.');
+        $meta=self::validateMetadata($title,$altText,$caption,null);
+        $focalX=max(0,min(100,$focalX)); $focalY=max(0,min(100,$focalY));
+        $dir=base_path('public/uploads/site');
+        if (!is_dir($dir) && !mkdir($dir,0755,true) && !is_dir($dir)) throw new RuntimeException('Could not prepare Media Library storage.');
+        $normalizedExt=$ext==='jpeg'?'jpg':$ext;
+        $target=$dir.'/media-'.bin2hex(random_bytes(12)).'.'.$normalizedExt;
+        if (!copy($source,$target)) throw new RuntimeException('Could not import starter media into the Media Library.');
+        @chmod($target,0644);
+        $public='/uploads/site/'.basename($target);
+        try {
+            $stmt=Database::connection()->prepare('INSERT INTO media_assets (folder_id,storage_path,original_name,title,alt_text,caption,mime_type,size_bytes,width,height,focal_x,focal_y,created_by,created_at,updated_at) VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP(),UTC_TIMESTAMP())');
+            $stmt->execute([$public,mb_substr(basename($relativePath),0,255),$meta['title'],$meta['alt_text'],$meta['caption'],$mime,$size,$width,$height,$focalX,$focalY,$userId>0?$userId:null]);
+            $id=(int)Database::connection()->lastInsertId();
+            self::regenerateVariants($id);
+            return $id;
+        } catch (\Throwable $e) {
+            SiteAssets::remove($public);
+            throw $e;
+        }
+    }
+
     public static function updateDetails(int $id,array $input): void
     {
         $asset=self::find($id); if (!$asset) throw new RuntimeException('Media item not found.');
@@ -243,8 +296,11 @@ final class MediaLibrary
     {
         $asset=self::find($id); if (!$asset) return; $usage=self::structuredUsage($id); if ($usage['current']>0) throw new RuntimeException('This image is used by '.$usage['current'].' structured content '.($usage['current']===1?'entry':'entries').'. Remove or replace those references before permanently deleting the image.'); if ($usage['revisions']>0) throw new RuntimeException('This image is retained by '.$usage['revisions'].' saved structured content '.($usage['revisions']===1?'revision':'revisions').'. Talvoro keeps it so those revisions can still be restored.');
         $refs=self::usageReferences($id); if ($refs) throw new RuntimeException('This image is still referenced by Talvoro content or SEO. Use the Media usage panel to find and replace those references first.');
-        $db=Database::connection(); $db->beginTransaction(); try { $db->prepare('DELETE FROM media_assets WHERE id=?')->execute([$id]); $db->commit(); } catch (\Throwable $e) { if ($db->inTransaction()) $db->rollBack(); throw new RuntimeException('This image is still referenced by Talvoro content or revision history and cannot be permanently deleted yet.'); }
-        self::removeVariantFiles($asset['variants']??[]); SiteAssets::remove((string)$asset['storage_path']);
+        $db=Database::connection(); $ownsTransaction=!$db->inTransaction(); if($ownsTransaction)$db->beginTransaction();
+        try { $db->prepare('DELETE FROM media_assets WHERE id=?')->execute([$id]); if($ownsTransaction)$db->commit(); }
+        catch (\Throwable $e) { if ($ownsTransaction && $db->inTransaction()) $db->rollBack(); throw new RuntimeException('This image is still referenced by Talvoro content or revision history and cannot be permanently deleted yet.'); }
+        // When participating in an outer transaction, callers must defer file deletion until commit.
+        if($ownsTransaction){ self::removeVariantFiles($asset['variants']??[]); SiteAssets::remove((string)$asset['storage_path']); }
     }
 
 

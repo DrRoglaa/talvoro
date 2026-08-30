@@ -146,7 +146,6 @@ $redirectChecked = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' ? isset($_PO
                     </select>
                 </label>
             <?php endif; ?>
-            <button class="button full" type="submit"><?= $isEdit ? ($isHome ? 'Save homepage' : 'Save changes') : 'Create page' ?></button>
             <?php if ($isEdit): ?><div class="autosave-status" data-autosave-status aria-live="polite">Autosave ready</div><?php endif; ?>
         </section>
 
@@ -172,6 +171,7 @@ $redirectChecked = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' ? isset($_PO
             <div class="section-heading"><div><p class="eyebrow">Brand</p><h2>Header & footer</h2></div></div>
             <label>Website name<input name="branding_site_name" maxlength="120" value="<?= e($home['branding.site_name'] ?? '') ?>" placeholder="Uses APP_NAME when blank"></label>
             <label>Tagline<input name="branding_tagline" maxlength="160" value="<?= e($home['branding.tagline'] ?? '') ?>" placeholder="Independent publishing"></label>
+            <label>Footer copyright / legal line<input name="branding_footer_note" maxlength="240" value="<?= e($home['branding.footer_note'] ?? '') ?>" placeholder="© 2026 - David - All rights reserved."><small class="field-help">Plain text only. Leave blank to use Talvoro's automatic footer text.</small></label>
             <?php if ($mediaAssets): ?>
                 <label>Choose logo from Media Library
                     <select name="branding_logo_media_id">

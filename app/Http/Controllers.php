@@ -30,6 +30,8 @@ use CMS\Core\SEO;
 use CMS\Core\Settings;
 use CMS\Core\SiteHealth;
 use CMS\Core\SiteAssets;
+use CMS\Core\StarterSite;
+use CMS\Core\StarterSiteRepository;
 use CMS\Core\ThemeManager;
 use CMS\Core\TwoFactor;
 use CMS\Core\RateLimiter;
@@ -936,9 +938,22 @@ final class Controllers
         if ($response = self::requireAuth('themes.manage')) {
             return $response;
         }
+        $themes = ThemeManager::all();
+        foreach ($themes as &$theme) {
+            $theme['starterDefinition'] = null;
+            $theme['starterState'] = null;
+            try {
+                $definition = StarterSiteRepository::definitionForTheme((int)$theme['id']);
+                if ($definition) {
+                    $theme['starterDefinition'] = ['name'=>(string)$definition['name'],'starter_version'=>(string)$definition['starter_version']];
+                    $theme['starterState'] = StarterSite::status((int)$theme['id']);
+                }
+            } catch (\Throwable) {}
+        }
+        unset($theme);
         return new Response(View::render('admin/themes', [
             'title' => 'Frontend themes',
-            'themes' => ThemeManager::all(),
+            'themes' => $themes,
             'importLimits' => ThemeManager::importLimits(),
             'created' => isset($_GET['created']),
             'imported' => isset($_GET['imported']),
@@ -973,7 +988,7 @@ final class Controllers
         } catch (\Throwable $e) {
             return new Response(View::render('errors/message', ['title' => 'Could not import theme', 'message' => $e->getMessage()]), 422);
         }
-        return Response::redirect(AdminPath::baseUrl() . '/themes?imported=1');
+        return Response::redirect(AdminPath::baseUrl() . '/themes?imported=1#theme-library');
     }
 
     public static function activateTheme(string $id): Response
@@ -1090,7 +1105,7 @@ final class Controllers
     {
         if ($response = self::requireAuth('blog.manage')) return $response;
         return new Response(View::render('admin/blog-settings', [
-            'title' => 'Blog availability','enabled' => Settings::blogEnabled(),'saved' => isset($_GET['saved']),
+            'title' => 'Blog settings','enabled' => Settings::blogEnabled(),'archiveTitle' => Settings::blogArchiveTitle(),'archiveIntro' => Settings::blogArchiveIntro(),'saved' => isset($_GET['saved']),
         ]));
     }
 
@@ -1101,7 +1116,9 @@ final class Controllers
         $actor = Auth::user();
         $enabled = isset($_POST['blog_enabled']);
         Settings::set('blog.enabled', $enabled ? '1' : '0', (int)$actor['id']);
-        Audit::log('blog.availability.update', 'site', null, ['enabled' => $enabled]);
+        Settings::set('blog.archive_title', mb_substr(trim((string)($_POST['blog_archive_title'] ?? '')), 0, 255), (int)$actor['id']);
+        Settings::set('blog.archive_intro', mb_substr(trim((string)($_POST['blog_archive_intro'] ?? '')), 0, 500), (int)$actor['id']);
+        Audit::log('blog.settings.update', 'site', null, ['enabled' => $enabled]);
         return Response::redirect(AdminPath::baseUrl() . '/blog-settings?saved=1');
     }
 

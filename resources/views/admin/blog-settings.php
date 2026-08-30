@@ -2,7 +2,7 @@
     <div>
         <p class="eyebrow">Content availability</p>
         <h1>Blog</h1>
-        <p class="muted">Disable the public blog without deleting any posts or CMS history.</p>
+        <p class="muted">Control public availability and the editorial copy shown on the Journal archive.</p>
     </div>
     <span class="health-chip <?= $enabled ? 'ok' : 'warning' ?>"><?= $enabled ? 'Enabled' : 'Disabled' ?></span>
 </header>
@@ -19,7 +19,11 @@
             </span>
             <span class="switch-control"><input type="checkbox" name="blog_enabled" value="1" <?= $enabled ? 'checked' : '' ?>><span class="switch-track"><span class="switch-thumb"></span></span></span>
         </label>
-        <div class="form-actions"><button class="button" type="submit">Save blog setting</button></div>
+        <div class="form-grid two-column blog-archive-copy-settings">
+            <label>Archive title<input name="blog_archive_title" maxlength="255" value="<?= e((string)($archiveTitle ?? '')) ?>" placeholder="Thoughts, updates and useful things."></label>
+            <label>Archive introduction<textarea name="blog_archive_intro" maxlength="500" rows="3" placeholder="Introduce your Journal."><?= e((string)($archiveIntro ?? '')) ?></textarea></label>
+        </div>
+        <div class="form-actions"><button class="button" type="submit">Save blog settings</button></div>
     </section>
 </form>
 

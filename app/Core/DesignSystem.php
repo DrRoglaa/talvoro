@@ -49,6 +49,18 @@ final class DesignSystem
         return self::normalize($out);
     }
 
+    /**  array<string,string> */
+    public static function valuesForTheme(string $slug): array
+    {
+        $slug = self::normalizeThemeSlug($slug);
+        $out = [];
+        foreach (self::definitions() as $key => $definition) {
+            $value = Settings::get(self::settingKeyForTheme($slug, $key));
+            $out[$key] = (string)($value ?? $definition['default']);
+        }
+        return self::normalize($out);
+    }
+
     /** @return array{id:int,name:string,slug:string,version:string} */
     public static function activeTheme(): array
     {
@@ -107,6 +119,19 @@ final class DesignSystem
         }
         foreach ($validated['values'] as $key => $value) {
             Settings::set(self::settingKey($key), $value, $userId);
+        }
+    }
+
+    /**  array<string,string> $values */
+    public static function saveForTheme(string $slug, array $values, int $userId): void
+    {
+        $slug = self::normalizeThemeSlug($slug);
+        $validated = self::validate($values);
+        if ($validated['errors']) {
+            throw new RuntimeException(implode(' ', $validated['errors']));
+        }
+        foreach ($validated['values'] as $key => $value) {
+            Settings::set(self::settingKeyForTheme($slug, $key), $value, $userId);
         }
     }
 
@@ -246,6 +271,11 @@ CSS;
     private static function settingKey(string $token): string
     {
         return self::SETTINGS_PREFIX . self::activeTheme()['slug'] . '.' . $token;
+    }
+
+    private static function settingKeyForTheme(string $slug, string $token): string
+    {
+        return self::SETTINGS_PREFIX . self::normalizeThemeSlug($slug) . '.' . $token;
     }
 
     private static function normalizeThemeSlug(string $slug): string

@@ -12,6 +12,7 @@ final class HomePage
             'branding.site_name' => '',
             'branding.tagline' => 'Independent publishing',
             'branding.logo_path' => '',
+            'branding.footer_note' => '',
             'homepage.eyebrow' => 'Make it yours.',
             'homepage.heading' => 'Create a *beautiful* place for what matters.',
             'homepage.intro' => 'Start with a clear message, shape every section around your story, and give visitors an easy path to what matters next.',
@@ -88,6 +89,7 @@ final class HomePage
             'branding.site_name' => self::text($input, 'branding_site_name', 120),
             'branding.tagline' => self::text($input, 'branding_tagline', 160),
             'branding.logo_path' => $current['branding.logo_path'],
+            'branding.footer_note' => self::text($input, 'branding_footer_note', 240),
         ];
         $errors = [];
         if ($data['branding.site_name'] !== '' && mb_strlen($data['branding.site_name']) < 2) {
@@ -104,6 +106,7 @@ final class HomePage
             'branding.site_name' => self::text($input, 'branding_site_name', 120),
             'branding.tagline' => self::text($input, 'branding_tagline', 160),
             'branding.logo_path' => $current['branding.logo_path'],
+            'branding.footer_note' => self::text($input, 'branding_footer_note', 240),
             'homepage.eyebrow' => self::text($input, 'homepage_eyebrow', 120),
             'homepage.heading' => self::text($input, 'homepage_heading', 300),
             'homepage.intro' => self::text($input, 'homepage_intro', 1400),
