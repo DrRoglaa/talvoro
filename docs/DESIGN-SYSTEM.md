@@ -132,6 +132,8 @@ A Talvoro theme should:
 - avoid relying on editor-only markup;
 - avoid moving application data into theme CSS.
 
+Imported themes may optionally add a declarative `starter/starter.json`. Starter content is validated and installed by Talvoro core; it does not extend the theme CSS/template trust boundary or permit executable theme code. See **[Theme Starter Sites](THEME-STARTER-SITES.md)** for the package contract, logical references, ownership, repair, and safe Delete Demo Data behavior.
+
 ## Visual Builder behavior
 
 The `0.15` Visual Builder keeps the preview iframe shell loaded and patches content as fields change.

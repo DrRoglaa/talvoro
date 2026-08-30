@@ -1,4 +1,7 @@
 <?php
+use CMS\Core\ContentModels;
+$modelKey=ContentModels::fieldKey((string)($model['model_key']??''));
+if($modelKey==='') $modelKey='content';
 $picture=static function(?array $image): string {
     if (!$image || empty($image['src'])) return '';
     $byMime=[]; foreach(($image['sources']??[]) as $source) if(is_array($source)) $byMime[(string)($source['mime']??'')][]=$source;
@@ -11,6 +14,7 @@ $picture=static function(?array $image): string {
     return $html.'</picture>';
 };
 ?>
+<div class="content-archive model-<?= e($modelKey) ?>" data-model-key="<?= e($modelKey) ?>">
 <header class="content-archive-hero"><p class="eyebrow"><?= e($model['singular_name']) ?> collection</p><h1><?= e($model['plural_name']) ?></h1><?php if (!empty($model['description'])): ?><p><?= e($model['description']) ?></p><?php endif; ?></header>
 <?php if (!$entries): ?>
 <section class="public-empty"><h2>Nothing published yet.</h2><p>Published <?= e(mb_strtolower((string)$model['plural_name'])) ?> will appear here.</p></section>
@@ -37,3 +41,4 @@ $picture=static function(?array $image): string {
 </nav>
 <?php endif; ?>
 <?php endif; ?>
+</div>

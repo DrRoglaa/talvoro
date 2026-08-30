@@ -198,7 +198,8 @@ final class Categories
         }
         $defaultId = (int)$default['id'];
 
-        $db->beginTransaction();
+        $ownsTransaction = !$db->inTransaction();
+        if ($ownsTransaction) $db->beginTransaction();
         try {
             $stmt = $db->prepare('DELETE FROM blog_categories WHERE id=? AND is_default=0');
             $stmt->execute([$id]);
@@ -228,9 +229,9 @@ final class Categories
                 }
             }
 
-            $db->commit();
+            if ($ownsTransaction) $db->commit();
         } catch (\Throwable $e) {
-            if ($db->inTransaction()) {
+            if ($ownsTransaction && $db->inTransaction()) {
                 $db->rollBack();
             }
             throw $e;

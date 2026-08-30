@@ -101,10 +101,16 @@ final class SiteAssets
         return '/uploads/site/' . $name;
     }
 
+    public static function managedUploadPath(string $publicPath): string
+    {
+        $value = trim($publicPath);
+        return preg_match('#^/uploads/site/[a-z0-9][a-z0-9._-]*\.(?:jpe?g|png|webp|avif)$#Di', $value) === 1 ? $value : '';
+    }
+
     public static function remove(string $publicPath): void
     {
-        $safe = HomePage::safeStoredAssetPath($publicPath);
-        if ($safe === '' || !str_starts_with($safe, '/uploads/site/')) return;
+        $safe = self::managedUploadPath($publicPath);
+        if ($safe === '') return;
         $target = base_path('public/uploads/site/' . basename($safe));
         if (is_file($target)) @unlink($target);
     }

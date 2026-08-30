@@ -47,6 +47,12 @@ final class Settings
         self::$cache[$key] = $value;
     }
 
+    public static function forget(string $key): void
+    {
+        Database::connection()->prepare('DELETE FROM cms_settings WHERE setting_key=?')->execute([$key]);
+        unset(self::$cache[$key]);
+    }
+
     public static function siteMode(): string
     {
         $mode = self::get('site.mode', 'live');
@@ -102,6 +108,30 @@ final class Settings
     public static function blogEnabled(): bool
     {
         return self::get('blog.enabled', '1') === '1';
+    }
+
+    public static function blogArchiveTitle(): string
+    {
+        return trim((string)self::get('blog.archive_title', 'Thoughts, updates and useful things.'));
+    }
+
+    public static function blogArchiveIntro(): string
+    {
+        return trim((string)self::get('blog.archive_intro', 'A simple publishing space with no ad network, no third-party tracker and no unnecessary noise.'));
+    }
+
+    public static function publicFooterText(): string
+    {
+        return trim((string)self::get('branding.footer_text', 'Thoughtful, independent publishing with your content and your data under your control.'));
+    }
+
+    public static function publicFooterNote(string $siteName, ?string $fallback = null): string
+    {
+        $fallback = $fallback !== null && trim($fallback) !== ''
+            ? trim($fallback)
+            : '© ' . date('Y') . ' ' . trim($siteName) . '.';
+        $value = trim((string)self::get('branding.footer_note', ''));
+        return $value !== '' ? $value : $fallback;
     }
 
     public static function plannedReturnDisplay(): ?string

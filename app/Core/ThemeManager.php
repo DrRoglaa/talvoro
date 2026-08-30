@@ -79,6 +79,8 @@ final class ThemeManager
             'expanded_mb' => intdiv(self::MAX_UNCOMPRESSED_BYTES, 1024 * 1024),
             'asset_mb' => intdiv(self::MAX_ASSET_BYTES, 1024 * 1024),
             'extensions' => array_keys(self::ALLOWED_IMAGE_MIMES),
+            'starter_kib' => intdiv(StarterManifest::MAX_BYTES, 1024),
+            'starter_resources' => StarterManifest::MAX_RESOURCES,
         ];
     }
 
@@ -152,6 +154,7 @@ final class ThemeManager
             $package = self::inspectPackage($zip);
             $prefix = $package['prefix'];
             $assetEntries = $package['assets'];
+            $starterEntry = $package['starter'];
 
             $manifestRaw = $zip->getFromName($prefix . 'theme.json');
             $css = $zip->getFromName($prefix . 'style.css');
@@ -180,6 +183,9 @@ final class ThemeManager
             $css = self::rewriteImportedCss($css, $slug, $availableAssets);
             self::validate($name, $slug, $version, $css);
 
+            $starterDefinition = null;
+            $availableStarterAssets = [];
+
             if ($assetEntries !== []) {
                 $finalRoot = self::themeAssetRoot($slug);
                 if (file_exists($finalRoot)) {
@@ -187,7 +193,15 @@ final class ThemeManager
                 }
 
                 $staging = self::newStagingDirectory();
-                self::extractAssets($zip, $prefix, $assetEntries, $staging);
+                $availableStarterAssets = self::extractAssets($zip, $prefix, $assetEntries, $staging);
+            }
+
+            if (is_array($starterEntry)) {
+                $starterRaw = $zip->getFromIndex((int)$starterEntry['index']);
+                if (!is_string($starterRaw) || strlen($starterRaw) !== (int)$starterEntry['size']) {
+                    throw new RuntimeException('Theme starter manifest could not be read safely.');
+                }
+                $starterDefinition = StarterManifest::decodeAndValidate($starterRaw, $availableStarterAssets);
             }
 
             $createdThemeId = self::create([
@@ -198,6 +212,10 @@ final class ThemeManager
                 'description' => $description,
                 'css_text' => $css,
             ], $userId);
+
+            if (is_array($starterDefinition)) {
+                self::persistStarterDefinition($createdThemeId, $starterDefinition);
+            }
 
             if ($staging !== null) {
                 self::installStagedAssets($staging, $slug);
@@ -283,6 +301,18 @@ final class ThemeManager
             throw new RuntimeException('Deactivate the theme before deleting it.');
         }
 
+        try {
+            $starterStmt = Database::connection()->prepare("SELECT 1 FROM starter_site_installations WHERE theme_id=? AND status='installed' LIMIT 1");
+            $starterStmt->execute([$id]);
+            if ($starterStmt->fetchColumn()) {
+                throw new RuntimeException('Remove the Starter Site before deleting this theme. Starter-owned content must be handled explicitly.');
+            }
+        } catch (RuntimeException $e) {
+            throw $e;
+        } catch (\Throwable) {
+            // Upgrade compatibility: the starter tables may not exist until migration 027 is applied.
+        }
+
         Database::connection()->prepare('DELETE FROM themes WHERE id=?')->execute([$id]);
         self::removeDirectory(self::themeAssetRoot((string)$row['slug']));
     }
@@ -342,6 +372,7 @@ final class ThemeManager
         }
 
         $assets = [];
+        $starter = null;
         $seenRelative = [];
         foreach ($stats as $name => $stat) {
             if (self::ignorableMetadataPath($name)) {
@@ -353,6 +384,13 @@ final class ThemeManager
                 }
                 if (!str_starts_with($name, $prefix)) {
                     throw new RuntimeException('Theme package contains files outside its theme folder.');
+                }
+                $relativeDirectory = substr($name, strlen($prefix));
+                if ($relativeDirectory === 'starter/') {
+                    continue;
+                }
+                if (!str_starts_with($relativeDirectory, 'assets/')) {
+                    throw new RuntimeException('Theme packages may contain directories inside assets/ and the optional starter/ directory only.');
                 }
                 continue;
             }
@@ -370,9 +408,19 @@ final class ThemeManager
             if ($relative === 'theme.json' || $relative === 'style.css') {
                 continue;
             }
+            if ($relative === 'starter/starter.json') {
+                if ($starter !== null) {
+                    throw new RuntimeException('Theme package may contain only one starter/starter.json file.');
+                }
+                if ((int)$stat['size'] < 2 || (int)$stat['size'] > StarterManifest::MAX_BYTES) {
+                    throw new RuntimeException('Theme starter manifest must be 512 KiB or smaller.');
+                }
+                $starter = $stat;
+                continue;
+            }
 
             if (!str_starts_with($relative, 'assets/')) {
-                throw new RuntimeException('Theme packages may contain theme.json, style.css and files inside assets/ only.');
+                throw new RuntimeException('Theme packages may contain theme.json, style.css, files inside assets/, and optional starter/starter.json only.');
             }
             if (!self::safeAssetPath($relative)) {
                 throw new RuntimeException('Theme package contains an unsafe asset path. Use simple letters, numbers, dots, hyphens and underscores.');
@@ -389,11 +437,12 @@ final class ThemeManager
             $assets[$relative] = $stat;
         }
 
-        return ['prefix' => $prefix, 'assets' => $assets];
+        return ['prefix' => $prefix, 'assets' => $assets, 'starter' => $starter];
     }
 
-    private static function extractAssets(ZipArchive $zip, string $prefix, array $assets, string $staging): void
+    private static function extractAssets(ZipArchive $zip, string $prefix, array $assets, string $staging): array
     {
+        $metadata = [];
         foreach ($assets as $relative => $stat) {
             $contents = $zip->getFromIndex((int)$stat['index']);
             if (!is_string($contents) || strlen($contents) !== (int)$stat['size']) {
@@ -410,7 +459,32 @@ final class ThemeManager
             }
             @chmod($target, 0644);
             self::validateImageAsset($target, $relative);
+            $metadata[$relative] = [
+                'sha256' => hash('sha256', $contents),
+                'extension' => strtolower((string)pathinfo($relative, PATHINFO_EXTENSION)),
+                'size' => strlen($contents),
+            ];
         }
+        return $metadata;
+    }
+
+    /** @param array<string,mixed> $definition */
+    private static function persistStarterDefinition(int $themeId, array $definition): void
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO theme_starter_definitions '
+            . '(theme_id,schema_version,starter_version,name,description,manifest_json,manifest_sha256,created_at,updated_at) '
+            . 'VALUES (?,?,?,?,?,?,?,UTC_TIMESTAMP(),UTC_TIMESTAMP())'
+        );
+        $stmt->execute([
+            $themeId,
+            (int)$definition['schema_version'],
+            (string)$definition['starter_version'],
+            (string)$definition['name'],
+            trim((string)($definition['description'] ?? '')) !== '' ? (string)$definition['description'] : null,
+            (string)$definition['canonical_json'],
+            (string)$definition['manifest_sha256'],
+        ]);
     }
 
     private static function validateImageAsset(string $path, string $relative): void

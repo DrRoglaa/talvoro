@@ -27,6 +27,7 @@ Clear, task-focused guides for installing, maintaining, developing, securing, an
 | Diagnose a problem | **[Troubleshooting](TROUBLESHOOTING.md)** |
 | Develop Talvoro | **[Development Guide](DEVELOPMENT.md)** |
 | Understand the design system | **[Design System](DESIGN-SYSTEM.md)** |
+| Build themes with optional demo content | **[Theme Starter Sites](THEME-STARTER-SITES.md)** |
 | Build a release locally | **[Release Engineering](RELEASING.md)** |
 | Publish or verify an official GitHub release | **[GitHub Releases & Verification](GITHUB-RELEASES.md)** |
 | Report a vulnerability | **[Security Policy](../SECURITY.md)** |
@@ -60,6 +61,7 @@ Clear, task-focused guides for installing, maintaining, developing, securing, an
 | --- | --- |
 | [Development Guide](DEVELOPMENT.md) | Branches, pull requests, testing, migrations, packaging, and versioning |
 | [Design System](DESIGN-SYSTEM.md) | Semantic tokens, section styles, themes, Visual Builder behavior, and safety |
+| [Theme Starter Sites](THEME-STARTER-SITES.md) | Declarative starter manifests, ownership, repair, safe Delete Demo Data, and theme-author security rules |
 | [Contributing](../CONTRIBUTING.md) | Contribution expectations, privacy principles, reviews, and issue guidance |
 
 ## Releases and trust

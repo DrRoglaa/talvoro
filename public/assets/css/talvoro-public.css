@@ -179,6 +179,9 @@ body.public-body :where(.blog-card-title a,.blog-post-card a,.content-card a,.ho
 .talvoro-public-footer .public-footer-column a:hover { color: var(--talvoro-action, var(--tv-action-primary)); }
 .talvoro-public-footer .footer-empty { color: #8d837c; font-size: .75rem; }
 .talvoro-public-footer .public-footer-bottom { min-height: 58px; padding: .9rem clamp(1.25rem,3vw,2.5rem); border-top: 1px solid rgba(82,65,52,.09); background: rgba(247,240,235,.58); color: #8d837c; font-size: .72rem; }
+.talvoro-public-footer .public-footer-bottom a { color: inherit; text-decoration-color: currentColor; text-underline-offset: .18em; }
+.talvoro-public-footer .public-footer-bottom a:hover { color: var(--talvoro-action, var(--tv-action-primary)); }
+.talvoro-public-footer .public-footer-bottom a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 
 
 
