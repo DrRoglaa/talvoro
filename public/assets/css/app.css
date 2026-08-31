@@ -2314,7 +2314,7 @@ td strong { color: var(--text); }
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 4px;
+    margin-top: auto;
 }
 .theme-preview-custom {
     background: linear-gradient(140deg,#fff,#f2ece6);
