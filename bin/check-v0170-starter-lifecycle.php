@@ -84,8 +84,8 @@ $assert('Existing SEO is preserved as a reversible controlled mutation', str_con
 $assert('SEO restoration preserves a disabled sitemap flag', str_contains($publishingSource, "unset(\$restore['sitemap_enabled'])"));
 $assert('Occupied menu locations are displaced without deleting the previous menu', str_contains($navigationSource, 'displaced_menu') && str_contains($navigationSource, "location'=>'unassigned'") && str_contains($navigationSource, 'restoreDisplacedMenu'));
 
-$spec=(string)@file_get_contents(base_path('docs/superpowers/specs/2026-08-29-theme-starter-sites-design.md'));
-$assert('Delete Demo Data is documented as ownership-safe starter removal', str_contains($spec,'Delete Demo Data') && str_contains($spec,'preserve'));
+$starterGuide=(string)@file_get_contents(base_path('docs/THEME-STARTER-SITES.md'));
+$assert('Delete Demo Data is documented as ownership-safe starter removal', str_contains($starterGuide,'Delete Demo Data') && str_contains($starterGuide,'preserve'));
 
 $failed=array_keys(array_filter($checks,static fn(bool $ok):bool=>!$ok));
 foreach($checks as $name=>$ok) echo ($ok?'[OK]   ':'[FAIL] ').$name.PHP_EOL;

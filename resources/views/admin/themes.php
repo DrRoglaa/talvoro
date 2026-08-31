@@ -26,21 +26,6 @@
                 <span class="health-chip <?= (int)$theme['is_active'] === 1 ? 'ok' : 'warning' ?>"><?= (int)$theme['is_active'] === 1 ? 'Active' : 'Inactive' ?></span>
             </div>
             <p><?= e($theme['description'] ?: 'Custom frontend theme.') ?></p>
-            <div class="theme-actions">
-                <?php if ((int)$theme['is_active'] === 1): ?>
-                    <?php if ((int)$theme['is_builtin'] !== 1): ?>
-                        <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/deactivate"><?= CMS\Core\Csrf::field() ?><button class="button secondary" type="submit">Deactivate</button></form>
-                    <?php else: ?>
-                        <span class="soft-badge">Protected default</span>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/activate"><?= CMS\Core\Csrf::field() ?><button class="button" type="submit">Activate</button></form>
-                <?php endif; ?>
-                <?php if ((int)$theme['is_builtin'] !== 1 && (int)$theme['is_active'] !== 1): ?>
-                    <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/delete"><?= CMS\Core\Csrf::field() ?><button class="link-button danger-text" type="submit">Delete</button></form>
-                <?php endif; ?>
-            </div>
-
             <?php if (!empty($theme['starterDefinition'])): ?>
                 <?php
                     $starterCode = (string)($theme['starterState']['code'] ?? 'not_installed');
@@ -63,6 +48,22 @@
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <div class="theme-actions">
+                <?php if ((int)$theme['is_active'] === 1): ?>
+                    <?php if ((int)$theme['is_builtin'] !== 1): ?>
+                        <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/deactivate"><?= CMS\Core\Csrf::field() ?><button class="button secondary" type="submit">Deactivate</button></form>
+                    <?php else: ?>
+                        <span class="soft-badge">Protected default</span>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/activate"><?= CMS\Core\Csrf::field() ?><button class="button" type="submit">Activate</button></form>
+                <?php endif; ?>
+                <?php if ((int)$theme['is_builtin'] !== 1 && (int)$theme['is_active'] !== 1): ?>
+                    <form method="post" action="<?= e(admin_url()) ?>/themes/<?= (int)$theme['id'] ?>/delete"><?= CMS\Core\Csrf::field() ?><button class="link-button danger-text" type="submit">Delete</button></form>
+                <?php endif; ?>
+            </div>
+
         </article>
     <?php endforeach; ?>
 </div>

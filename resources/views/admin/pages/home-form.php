@@ -11,7 +11,7 @@ $maxUploadMb = (int)($maxUploadMb ?? 12);
         <a class="back-link" href="<?= e(admin_url()) ?>/pages">← Pages</a>
         <p class="eyebrow">Front page</p>
         <h1>Home</h1>
-        <p class="muted">Build the public front page from structured, editable sections. The layout follows the warm editorial composition shown in the Spottina reference.</p>
+        <p class="muted">Build the public front page from structured, editable sections. Use structured, editable sections to shape the public front page while keeping content independent from the active theme.</p>
     </div>
     <a class="button secondary" href="/" target="_blank" rel="noopener">View homepage ↗</a>
 </header>

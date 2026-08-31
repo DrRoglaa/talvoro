@@ -43,7 +43,7 @@ $assert('Explicit admin URL anchors override saved form scroll restoration', str
 $assert('Theme import does not save its old form scroll position', str_contains($themes,'action="<?= e(admin_url()) ?>/themes/import" enctype="multipart/form-data" class="stack" data-no-scroll-restore'));
 $actionsPos=strpos($themes,'<div class="theme-actions">');
 $starterSummaryPos=strpos($themes,'<div class="starter-theme-summary">');
-$assert('Theme card actions stay visible before optional Starter Site details', $actionsPos !== false && $starterSummaryPos !== false && $actionsPos < $starterSummaryPos && !str_contains((string)@file_get_contents(base_path('public/assets/css/app.css')),'.theme-actions {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    flex-wrap: wrap;\n    margin-top: auto;'));
+$assert('Optional Starter Site details preserve the v0.16.1 theme-card action baseline', $actionsPos !== false && $starterSummaryPos !== false && $starterSummaryPos < $actionsPos && str_contains((string)@file_get_contents(base_path('public/assets/css/app.css')), ".theme-actions {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    flex-wrap: wrap;\n    margin-top: auto;"));
 
 $failed=array_keys(array_filter($checks,static fn(bool $ok):bool=>!$ok));
 foreach($checks as $name=>$ok)echo($ok?'[OK]   ':'[FAIL] ').$name.PHP_EOL;

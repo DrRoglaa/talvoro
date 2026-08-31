@@ -23,7 +23,7 @@ final class PublicSitePreset
     /** @return array{status:string,pages_created:int,home_replaced:bool,menus_created:int,seo_seeded:int,message:string} */
     public static function apply(?int $actorId = null, bool $force = false): array
     {
-        if (Settings::get(self::APPLIED_KEY, '') === self::APPLIED_VALUE) {
+        if (!$force && Settings::get(self::APPLIED_KEY, '') === self::APPLIED_VALUE) {
             return self::result('skip', 0, false, 0, 0, 'Talvoro product-site preset is already applied.');
         }
 
@@ -43,6 +43,11 @@ final class PublicSitePreset
             );
         }
 
+        if ($force) {
+            self::removeInstalledStarterSites($actorId);
+            self::removeLegacyDefaultContamination($actorId);
+        }
+
         $db = Database::connection();
         $ownsTransaction = !$db->inTransaction();
         if ($ownsTransaction) $db->beginTransaction();
@@ -50,6 +55,12 @@ final class PublicSitePreset
         try {
             Settings::set('branding.site_name', 'Talvoro', $actorId);
             Settings::set('branding.tagline', 'Self-hosted publishing. Beautifully yours.', $actorId);
+            if ($force) {
+                Settings::set('branding.logo_path', '', $actorId);
+                Settings::set('branding.footer_text', '', $actorId);
+                Settings::set('branding.footer_note', '', $actorId);
+                self::restoreEditorialTheme();
+            }
 
             $homeId = Pages::ensureHomePage($actorId);
             if ($homeId < 1) throw new RuntimeException('Talvoro could not resolve the Home page.');
@@ -76,6 +87,49 @@ final class PublicSitePreset
             if ($ownsTransaction && $db->inTransaction()) $db->rollBack();
             throw $e;
         }
+    }
+
+    private static function removeInstalledStarterSites(int $actorId): void
+    {
+        $db = Database::connection();
+        $themeIds = $db->query("SELECT DISTINCT theme_id FROM starter_site_installations WHERE status='installed' ORDER BY theme_id")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($themeIds ?: [] as $themeIdValue) {
+            $themeId = (int)$themeIdValue;
+            if ($themeId < 1) continue;
+            while (StarterSiteRepository::activeInstallationForTheme($themeId) !== null) {
+                StarterSite::deleteDemoData($themeId, $actorId);
+            }
+        }
+    }
+
+    private static function removeLegacyDefaultContamination(int $actorId): void
+    {
+        $db = Database::connection();
+        $stmt = $db->query("SELECT id FROM content_models WHERE model_key='dog' AND slug='dalmatians' AND singular_name='Dog' AND plural_name='Our Dalmatians' LIMIT 1");
+        $modelId = (int)($stmt->fetchColumn() ?: 0);
+        if ($modelId < 1 || ContentModels::entryCount($modelId, false) !== 0) return;
+
+        try {
+            ContentModels::deleteModel($modelId);
+            Audit::log('product_site.legacy_cleanup', 'content_model', $modelId, [
+                'actor_id' => $actorId,
+                'reason' => 'Removed empty legacy Spottina starter model during explicit Talvoro product-site repair.',
+            ]);
+        } catch (RuntimeException) {
+            // Preserve the model if it has gained dependencies or other user-owned references.
+        }
+    }
+
+    private static function restoreEditorialTheme(): void
+    {
+        $db = Database::connection();
+        $themeId = (int)$db->query("SELECT id FROM themes WHERE slug='talvoro-editorial' LIMIT 1")->fetchColumn();
+        if ($themeId < 1) {
+            throw new RuntimeException('Talvoro Editorial theme is missing. Run database migrations before repairing the product site.');
+        }
+        $db->exec('UPDATE themes SET is_active=0,updated_at=UTC_TIMESTAMP() WHERE is_active=1');
+        $stmt = $db->prepare('UPDATE themes SET is_active=1,updated_at=UTC_TIMESTAMP() WHERE id=?');
+        $stmt->execute([$themeId]);
     }
 
     /** @return array<string,mixed> */
